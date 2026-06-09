@@ -8,10 +8,8 @@ import './App.css';
 // Grad-CAM se carga bajo demanda: solo si el usuario activa la atención.
 // Mantiene el bundle del panel principal ligero (la dependencia interna
 // reusa @tensorflow/tfjs que ya está cargado vía loadModel).
+const BASE = import.meta.env.BASE_URL;
 const loadGradCAM = () => import('./lib/gradcam');
-
-// La galería de evaluación queda más abajo en la página y suele caer fuera
-// del viewport inicial. Cargarla aparte mejora el TTFB del panel principal.
 const ResultsGallery = lazy(() => import('./ResultsGallery'));
 
 // Contador animado para el porcentaje de confianza.
@@ -51,17 +49,19 @@ export default function App() {
   const imgRef = useRef(null);
   const inputRef = useRef(null);
   const camCanvasRef = useRef(null);
-  // Token de cancelación: cada análisis se asocia a un token incremental;
-  // si llega un análisis nuevo, el resultado del viejo se descarta.
   const runTokenRef = useRef(0);
   const [showCam, setShowCam] = useState(false);
   const [camBusy, setCamBusy] = useState(false);
-  // Flag de montaje compartido por efectos y análisis. Evita setState tras
-  // unmount cuando una predicción (~100-300 ms en GPU) termina después de
-  // que el usuario haya navegado fuera.
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
-  const base = import.meta.env.BASE_URL;
+  const pendingAutoRef = useRef(false);
+  const analizarRef = useRef(null);
+  const imageURLRef = useRef(null);
+  const imageErrorRef = useRef(false);
+  const predictingRef = useRef(false);
+  imageURLRef.current = imageURL;
+  imageErrorRef.current = imageError;
+  predictingRef.current = predicting;
 
   // Ejemplos fijos del dataset (3 benignos + 3 malignos) para prueba rápida.
   // Elegidos del manifest como casos representativos y claros.
@@ -69,7 +69,7 @@ export default function App() {
   // y analizar esa muestra. Permite enlaces directos a casos concretos.
   useEffect(() => {
     let mounted = true;
-    fetch(`${base}samples/manifest.json`)
+    fetch(`${BASE}samples/manifest.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`manifest ${r.status}`);
         return r.json();
@@ -81,14 +81,17 @@ export default function App() {
           arr.slice(0, n).map((name) => ({ real, path: `${base}samples/${real}/${name}` }));
         setExamples([...pickN(d.malignant, 'malignant'), ...pickN(d.benign, 'benign')]);
 
-        // Resolución del parámetro ?sample=, con espera implícita a que el
-        // modelo esté listo (autoRun arranca cuando la imagen decodifica).
+        // Resolución del parámetro ?sample=, con cola si el modelo no está listo.
         const params = new URLSearchParams(window.location.search);
         const wanted = params.get('sample');
         if (!wanted) return;
         const valid = /^melanoma_[\w-]+\.(jpe?g|png|webp)$/i.test(wanted);
         if (!valid) {
           setFileError('Formato de muestra inválido en la URL');
+          return;
+        }
+        if (!d.malignant || !d.benign) {
+          setFileError('Manifest corrupto');
           return;
         }
         const real = d.malignant.includes(wanted)
@@ -98,17 +101,13 @@ export default function App() {
           setFileError(`Muestra "${wanted}" no encontrada en el conjunto de test`);
           return;
         }
-        setImage(`${base}samples/${real}/${wanted}`, { auto: true });
+        setImage(`${BASE}samples/${real}/${wanted}`, { auto: true });
       })
       .catch(() => mounted && setExamples([]));
     return () => {
       mounted = false;
     };
-    // setImage cambia en cada render por las dependencias del callback;
-    // omitirlo aquí evita reentrar al efecto y disparar fetch+setImage en
-    // bucle. El efecto solo debe correr al montar (con `base` fijo).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base]);
+  }, [BASE]);
 
   // Carga del modelo + metadatos técnicos. El flag `mounted` evita setState
   // tras desmontar el componente (React 18 StrictMode lo monta dos veces en dev).
@@ -141,6 +140,14 @@ export default function App() {
     [],
   );
 
+  // Retry auto-analysis when model finishes loading
+  useEffect(() => {
+    if (modelStatus === 'ready' && pendingAutoRef.current && imageURL) {
+      pendingAutoRef.current = false;
+      analizar();
+    }
+  }, [modelStatus, imageURL, analizar]);
+
   const analizar = useCallback(async () => {
     if (!imagenLista() || modelStatus !== 'ready') return;
     const myToken = ++runTokenRef.current;
@@ -171,6 +178,7 @@ export default function App() {
       if (mountedRef.current && myToken === runTokenRef.current) setPredicting(false);
     }
   }, [modelStatus, imagenLista]);
+  analizarRef.current = analizar;
 
   const setImage = useCallback(
     (url, { auto = false } = {}) => {
@@ -287,7 +295,11 @@ export default function App() {
   const onImgLoad = () => {
     if (autoRun) {
       setAutoRun(false);
-      analizar();
+      if (modelStatus === 'ready') {
+        analizar();
+      } else {
+        pendingAutoRef.current = true;
+      }
     }
   };
 
@@ -300,20 +312,19 @@ export default function App() {
   };
 
   // Atajo global: Enter analiza si hay imagen lista y el modelo está
-  // cargado. Se ignora si el foco está en un campo editable (no aplica
-  // aquí porque no hay inputs de texto, pero conviene curarse en salud).
+  // cargado. Usa refs para evitar re-registrar el listener en cada render.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Enter') return;
       const t = e.target;
       if (t?.matches?.('input, textarea, [contenteditable="true"], button')) return;
-      if (!imageURL || imageError || modelStatus !== 'ready' || predicting) return;
+      if (!imageURLRef.current || imageErrorRef.current || predictingRef.current) return;
       e.preventDefault();
-      analizar();
+      analizarRef.current?.();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [imageURL, imageError, modelStatus, predicting, analizar]);
+  }, []);
 
   return (
     <div className="app" aria-busy={modelStatus === 'loading'}>
@@ -420,7 +431,7 @@ export default function App() {
                 alt="Lesión dermatoscópica a analizar"
                 className={`preview ${showCam ? 'is-grayscale' : ''}`}
                 onLoad={onImgLoad}
-                onError={() => setImageError(true)}
+                onError={() => { if (mountedRef.current) setImageError(true); }}
               />
               {predicting && <span className="scan-line" aria-hidden="true" />}
               <canvas
@@ -439,7 +450,7 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div className="dropzone-hint">
+            <div className="dropzone-hint" id="dropzone-hint">
               <span className="dropzone-icon" aria-hidden="true">+</span>
               {imageError ? (
                 <>

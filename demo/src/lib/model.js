@@ -62,8 +62,7 @@ export function calibrate(p) {
  */
 export async function loadModel(onProgress) {
   if (modelPromise) {
-    // Verificar versión en metadata si ya tenemos el modelo cargado
-    if (modelMetadata !== null && modelMetadata?.version !== MODEL_VERSION) {
+    if (modelMetadata?.version !== MODEL_VERSION) {
       console.warn(`Model version mismatch (cached: ${modelMetadata?.version}, expected: ${MODEL_VERSION}). Reloading...`);
       modelPromise = null;
       modelMetadata = null;
@@ -75,7 +74,6 @@ export async function loadModel(onProgress) {
   modelPromise = ensureBackend().then(async () => {
     const model = await tf.loadLayersModel(MODEL_URL, { onProgress });
     
-    // Extraer metadata del modelo (versión, temperature, etc.)
     if (model.userDefinedMetadata) {
       modelMetadata = model.userDefinedMetadata;
       if (modelMetadata.temperature) {
@@ -85,9 +83,15 @@ export async function loadModel(onProgress) {
       if (modelMetadata.version) {
         console.log(`Model version: ${modelMetadata.version}`);
       }
+    } else {
+      modelMetadata = { version: MODEL_VERSION, temperature: TEMPERATURE };
     }
     
     return model;
+  }, (err) => {
+    modelPromise = null;
+    modelMetadata = null;
+    throw err;
   });
   
   return modelPromise;

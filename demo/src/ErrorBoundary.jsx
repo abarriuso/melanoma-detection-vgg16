@@ -22,38 +22,17 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          role="alert"
-          style={{
-            padding: '1.5rem',
-            margin: '1rem 0',
-            border: '1px solid rgba(212, 115, 108, 0.4)',
-            background: 'rgba(212, 115, 108, 0.08)',
-            color: '#ede8e1',
-            fontFamily: 'var(--sans)',
-          }}
-        >
-          <p style={{ margin: '0 0 0.5rem', fontWeight: 600, color: '#d4736c' }}>
+        <div role="alert" className="error-boundary">
+          <p className="error-boundary-title">
             Algo falló al renderizar esta sección
           </p>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#a09890' }}>
+          <p className="error-boundary-msg">
             {this.state.error?.message || 'Error desconocido'}
           </p>
           <button
             type="button"
+            className="error-boundary-btn"
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{
-              marginTop: '0.8rem',
-              padding: '0.45rem 0.85rem',
-              background: 'transparent',
-              border: '1px solid #3d3a37',
-              color: '#d4a053',
-              cursor: 'pointer',
-              fontFamily: 'var(--sans)',
-              fontSize: '0.82rem',
-              outline: '2px solid #d4a053',
-              outlineOffset: '2px',
-            }}
           >
             Reintentar
           </button>

@@ -127,11 +127,9 @@ export default function ResultsGallery() {
       }
       const decorated = pool.map((s) => decorate(s)).filter((s) => s.score != null);
       if (m === 'hardest') {
-        return decorated
-          .map((s) => ({ ...s, _d: Math.abs(s.score - 0.5) }))
-          .sort((a, b) => a._d - b._d)
-          .slice(0, BATCH_SIZE)
-          .map(({ _d, ...rest }) => rest);
+        const deltas = decorated.map((s) => ({ s, d: Math.abs(s.score - 0.5) }));
+        deltas.sort((a, b) => a.d - b.d);
+        return deltas.slice(0, BATCH_SIZE).map(({ s }) => s);
       }
       if (m === 'fn') {
         return decorated
@@ -221,7 +219,7 @@ export default function ResultsGallery() {
         if (mountedRef.current && myToken === opTokenRef.current) {
           setScoringStatus('error');
         }
-        return;
+        // No abortamos el pool por un fallo individual
       }
     }
     if (!mountedRef.current || myToken !== opTokenRef.current) return;
@@ -328,9 +326,27 @@ export default function ResultsGallery() {
     };
   }, [samples]);
 
+  // Handlers de tilt 3D para las cards. Estables (solo usan e.currentTarget).
+  const onCardMove = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    e.currentTarget.style.transform =
+      `perspective(600px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.04)`;
+  }, []);
+
+  const onCardLeave = useCallback((e) => {
+    e.currentTarget.style.transform = '';
+  }, []);
+
+  const setImgRef = useCallback((el, i) => {
+    if (el) imgRefs.current[i] = el;
+    else delete imgRefs.current[i];
+  }, []);
+
   if (pool.length === 0) return null;
 
-  const currentMode = MODES.find((m) => m.id === mode);
+  const currentMode = MODES.find((m) => m.id === mode) || MODES[0];
   const noResults = mode !== 'random' && allScored && samples.length === 0;
   const showClassifyButton = mode === 'random';
 
@@ -490,17 +506,6 @@ export default function ResultsGallery() {
 
           const realLetter = sample.real === 'malignant' ? 'M' : 'B';
 
-          const onCardMove = (e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width - 0.5;
-            const y = (e.clientY - rect.top) / rect.height - 0.5;
-            e.currentTarget.style.transform =
-              `perspective(600px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale(1.04)`;
-          };
-          const onCardLeave = (e) => {
-            e.currentTarget.style.transform = '';
-          };
-
           return (
             <div
               key={`${mode}-${i}-${sample.file}`}
@@ -517,7 +522,7 @@ export default function ResultsGallery() {
                 {realLetter}
               </span>
               <img
-                ref={(el) => { imgRefs.current[i] = el; }}
+                ref={(el) => setImgRef(el, i)}
                 src={sample.path}
                 alt={`Lesión dermatoscópica ${sample.real === 'malignant' ? 'maligna' : 'benigna'}`}
                 loading="lazy"

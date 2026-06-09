@@ -18,12 +18,19 @@
   --accent: #a78bfa;
   --accent-dim: #8b6fe0;
   --accent-soft: rgba(167, 139, 250, 0.08);
+  --accent-border: rgba(167, 139, 250, 0.15);
 
   --benign: #34d399;
   --benign-bg: rgba(52, 211, 153, 0.10);
+  --benign-border: rgba(52, 211, 153, 0.2);
   --malignant: #fb7185;
   --malignant-bg: rgba(251, 113, 133, 0.10);
+  --malignant-border: rgba(251, 113, 133, 0.15);
   --warning: #fbbf24;
+
+  --white-soft: rgba(255, 255, 255, 0.06);
+  --white-hover: rgba(255, 255, 255, 0.03);
+  --bg-alpha: rgba(10, 10, 16, 0.85);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -67,6 +74,11 @@ a {
 }
 a:hover {
   border-bottom-color: var(--accent);
+}
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 code,

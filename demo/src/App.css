@@ -136,7 +136,7 @@
 .status-loading {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(167, 139, 250, 0.15);
+  border-color: var(--accent-border);
   position: relative;
   overflow: hidden;
 }
@@ -144,13 +144,13 @@
 .status-ready {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(167, 139, 250, 0.15);
+  border-color: var(--accent-border);
 }
 .status-ready::before { background: var(--accent); }
 .status-error {
   color: var(--malignant);
   background: var(--malignant-bg);
-  border-color: rgba(251, 113, 133, 0.15);
+  border-color: var(--malignant-border);
 }
 .status-error::before { background: var(--malignant); }
 
@@ -213,9 +213,9 @@
   margin: 0;
   font-size: 0.88rem;
 }
-.dropzone-sub {
-  font-size: 0.78rem !important;
-  margin-top: 0.35rem !important;
+.dropzone-hint .dropzone-sub {
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
   color: var(--faint);
 }
 
@@ -308,7 +308,7 @@
 .cam-btn:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--muted);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--white-hover);
 }
 .cam-btn.is-on {
   color: var(--accent);
@@ -333,7 +333,7 @@
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--card-edge);
-  background: rgba(10, 10, 16, 0.85);
+  background: var(--bg-alpha);
   color: var(--text);
   font-size: 1.2rem;
   line-height: 1;
@@ -360,7 +360,7 @@
   font-size: 0.82rem;
   color: var(--malignant);
   background: var(--malignant-bg);
-  border: 1px solid rgba(251, 113, 133, 0.2);
+  border: 1px solid var(--malignant-border);
   border-left: 3px solid var(--malignant);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
@@ -483,12 +483,12 @@
 }
 .result.benign {
   background: var(--benign-bg);
-  border-color: rgba(52, 211, 153, 0.2);
+  border-color: var(--benign-border);
   border-left-color: var(--benign);
 }
 .result.malignant {
   background: var(--malignant-bg);
-  border-color: rgba(251, 113, 133, 0.2);
+  border-color: var(--malignant-border);
   border-left-color: var(--malignant);
 }
 
@@ -539,7 +539,7 @@
 
 .confidence-bar {
   height: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--white-soft);
   overflow: hidden;
   border-radius: var(--radius-sm);
 }
@@ -586,15 +586,6 @@
 .threshold-note {
   font-family: var(--mono);
   color: var(--muted);
-}
-
-.usage-stats {
-  margin: 1.2rem 0 0;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--faint);
-  text-align: right;
-  letter-spacing: 0.01em;
 }
 
 /* === Disclaimer ================================================= */
@@ -665,4 +656,41 @@
     padding-left: 1.1rem;
     padding-right: 1.1rem;
   }
+}
+
+/* === Error Boundary ============================================= */
+.error-boundary {
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(212, 115, 108, 0.4);
+  background: rgba(212, 115, 108, 0.08);
+  color: var(--text);
+  border-radius: var(--radius-md);
+}
+.error-boundary-title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  color: #d4736c;
+}
+.error-boundary-msg {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.error-boundary-btn {
+  margin-top: 0.8rem;
+  padding: 0.45rem 0.85rem;
+  background: transparent;
+  border: 1px solid var(--card-edge);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  transition: background 0.15s ease;
+}
+.error-boundary-btn:hover {
+  background: var(--accent-soft);
 }

@@ -62,6 +62,25 @@ function getSplitModels(model) {
   return out;
 }
 
+// Gradiente cacheado por modelo (misma WeakMap que split models)
+const gradCache = new WeakMap();
+
+function getGradFn(clsModel) {
+  let fn = gradCache.get(clsModel);
+  if (!fn) {
+    fn = tf.grad((a) => {
+      const out = clsModel.predict(a);
+      // Verificar que squeeze produce un escalar
+      if (out.shape.length !== 2 || out.shape[0] !== 1 || out.shape[1] !== 1) {
+        console.warn(`Grad-CAM: output shape inesperado [${out.shape}], continuando de todas formas`);
+      }
+      return out.squeeze();
+    });
+    gradCache.set(clsModel, fn);
+  }
+  return fn;
+}
+
 /**
  * Calcula Grad-CAM para una imagen ya preprocesada.
  *
@@ -93,8 +112,8 @@ export async function computeGradCAM(model, imgElement) {
   try {
     activations = actModel.predict(input);
 
-    // d(prediction) / d(activations). tf.grad espera una función escalar.
-    const gradFn = tf.grad((a) => clsModel.predict(a).squeeze());
+    // d(prediction) / d(activations). La función gradiente se cachea.
+    const gradFn = getGradFn(clsModel);
     grads = gradFn(activations);
 
     heatmap = tf.tidy(() => {

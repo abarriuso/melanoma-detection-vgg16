@@ -13,6 +13,8 @@ ejecuta la inferencia íntegramente en el navegador del usuario.
 
 **Demo en vivo:** https://abarriuso.github.io/melanoma-detection-vgg16/
 
+[![PageSpeed Insights](https://img.shields.io/badge/PageSpeed-Insights-4285F4?logo=googlechrome&logoColor=white)](https://pagespeed.web.dev/analysis/https-abarriuso-github-io-melanoma-detection-vgg16/)
+
 Sube una imagen dermatoscópica y obtén la predicción en el propio navegador.
 La imagen no se transmite a ningún servidor.
 
