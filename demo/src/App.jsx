@@ -417,7 +417,7 @@ export default function App() {
                 ref={imgRef}
                 src={imageURL}
                 alt="Lesión dermatoscópica a analizar"
-                className="preview"
+                className={`preview ${showCam ? 'is-grayscale' : ''}`}
                 onLoad={onImgLoad}
                 onError={() => setImageError(true)}
               />
