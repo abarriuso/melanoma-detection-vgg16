@@ -1,29 +1,28 @@
-/* Tokens de diseño — tech oscuro.
-   Paleta fría inspirada en GitHub Dark: fondos azul-gris profundos,
-   acento dorado cálido para contraste. Semánticas clínicas
-   (benigno/maligno) en verde coral. */
+/* Tokens de diseño — slate académico.
+   Paleta fría con subtonos azul-gris, acento cobre/cobre envejecido.
+   Diseñada para transmitir seriedad clínica sin caer en lo genérico. */
 :root {
   color-scheme: dark;
 
-  --bg: #0d1117;
-  --bg-elevated: #161b22;
-  --card: #1c2128;
-  --card-border: #30363d;
-  --card-edge: #484f58;
+  --bg: #0a0b0f;
+  --bg-elevated: #12141a;
+  --card: #161820;
+  --card-border: #252830;
+  --card-edge: #353840;
 
-  --text: #e6edf3;
-  --muted: #8b949e;
-  --faint: #6e7681;
+  --text: #d4d7de;
+  --muted: #7c8190;
+  --faint: #515560;
 
-  --accent: #f0b654;
-  --accent-dim: #d9a03e;
-  --accent-soft: rgba(240, 182, 84, 0.1);
+  --accent: #c4915a;
+  --accent-dim: #a87d4c;
+  --accent-soft: rgba(196, 145, 90, 0.1);
 
-  --benign: #58d68d;
-  --benign-bg: rgba(88, 214, 141, 0.08);
-  --malignant: #f87171;
-  --malignant-bg: rgba(248, 113, 113, 0.08);
-  --warning: #f0b654;
+  --benign: #5a9e72;
+  --benign-bg: rgba(90, 158, 114, 0.08);
+  --malignant: #c25f56;
+  --malignant-bg: rgba(194, 95, 86, 0.08);
+  --warning: #c4915a;
 
   --radius-sm: 6px;
   --radius-md: 10px;

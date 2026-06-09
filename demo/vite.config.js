@@ -38,10 +38,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'og.png'],
       manifest: {
-        name: 'Melanoma AI — Detección de lesiones cutáneas',
-        short_name: 'Melanoma AI',
+        name: 'Detección de melanoma — VGG16 fine-tuning',
+        short_name: 'Melanoma VGG16',
         description:
-          'Analiza lesiones cutáneas con VGG16 + fine-tuning. Inferencia 100% local con TensorFlow.js.',
+          'Clasificación dermoscópica de lesiones cutáneas con VGG16 fine-tuned. Inferencia 100% client-side con TensorFlow.js.',
         lang: 'es',
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,

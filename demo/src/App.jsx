@@ -335,12 +335,12 @@ export default function App() {
       </nav>
 
       <header className="hero">
-        <p className="hero-tag">Proyecto educativo · Open source · Inferencia 100% local</p>
-        <h1>Analiza lesiones cutáneas con IA</h1>
+        <p className="hero-tag">Fine-tuning · VGG16 · TensorFlow.js · Client-side</p>
+        <h1>Detección de melanoma mediante deep learning</h1>
         <p className="subtitle">
-          Sube una imagen dermatoscópica y un modelo VGG16 la clasifica
-          directamente en tu navegador. Nada se envía a la nube; la inferencia
-          es 100% local con TensorFlow.js.
+          Clasificación dermoscópica de lesiones cutáneas mediante una red neuronal
+          VGG16 con fine-tuning (AUC 0.9606). El modelo se ejecuta íntegramente en
+          el navegador — ninguna imagen se transfiere a un servidor externo.
         </p>
       </header>
 
@@ -410,7 +410,7 @@ export default function App() {
             onChange={onPickFile}
           />
           {imageURL && !imageError ? (
-            <div className={`preview-wrap ${predicting ? 'is-scanning' : ''}`}>
+            <div className="preview-wrap">
               <img
                 ref={imgRef}
                 src={imageURL}
@@ -420,13 +420,6 @@ export default function App() {
                 onError={() => setImageError(true)}
               />
               {predicting && <span className="scan-line" aria-hidden="true" />}
-              {predicting && (
-                <>
-                  <span className="radar-ring" aria-hidden="true" />
-                  <span className="radar-ring" aria-hidden="true" />
-                  <span className="radar-ring" aria-hidden="true" />
-                </>
-              )}
               <canvas
                 ref={camCanvasRef}
                 className={`preview-cam ${showCam ? 'is-on' : ''}`}

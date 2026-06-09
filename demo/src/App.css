@@ -301,54 +301,19 @@
     transparent 100%
   );
   box-shadow:
-    0 0 8px rgba(212, 160, 83, 0.6),
-    0 0 20px rgba(212, 160, 83, 0.3);
+    0 0 6px rgba(212, 160, 83, 0.5),
+    0 0 14px rgba(212, 160, 83, 0.2);
   pointer-events: none;
   z-index: 2;
   animation: scan-sweep 1.8s ease-in-out infinite;
 }
-/* Radar pulse: ondas concéntricas desde el centro durante análisis */
-@keyframes radar-pulse {
-  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0.5; border-width: 2px; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; border-width: 0.5px; }
-}
-.radar-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  border: 1.5px solid var(--accent);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 2;
-  animation: radar-pulse 2s ease-out infinite;
-}
-.radar-ring:nth-child(2) { animation-delay: 0.6s; }
-.radar-ring:nth-child(3) { animation-delay: 1.2s; }
-/* Glow sutil en la imagen durante escaneo */
-.preview-wrap.is-scanning::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(212, 160, 83, 0.25);
-  pointer-events: none;
-  z-index: 1;
-  animation: scan-border-pulse 1.8s ease-in-out infinite;
-}
-@keyframes scan-border-pulse {
-  0%, 100% { border-color: rgba(212, 160, 83, 0.1); }
-  50%      { border-color: rgba(212, 160, 83, 0.35); }
-}
 @media (prefers-reduced-motion: reduce) {
   .scan-line { animation: none; opacity: 0; }
-  .radar-ring { animation: none; }
-  .preview-wrap.is-scanning::after { animation: none; }
 }
 
 /* Canvas que renderiza el Grad-CAM sobre la preview. Se dimensiona al
    100% del wrap para encajar con la <img> que lleva max-height: 320px,
-   con mix-blend-mode: screen para que las zonas oscuras del heatmap no
+   con mix-blend-mode: lighten para que las zonas oscuras del heatmap no
    tapen la lesión. Oculto por defecto; fade-in al activar. */
 .preview-cam {
   position: absolute;
@@ -358,7 +323,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease-out;
-  mix-blend-mode: screen;
+  mix-blend-mode: lighten;
 }
 .preview-cam.is-on {
   opacity: 0.9;
