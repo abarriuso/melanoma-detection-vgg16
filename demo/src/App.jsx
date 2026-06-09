@@ -140,14 +140,6 @@ export default function App() {
     [],
   );
 
-  // Retry auto-analysis when model finishes loading
-  useEffect(() => {
-    if (modelStatus === 'ready' && pendingAutoRef.current && imageURL) {
-      pendingAutoRef.current = false;
-      analizar();
-    }
-  }, [modelStatus, imageURL, analizar]);
-
   const analizar = useCallback(async () => {
     if (!imagenLista() || modelStatus !== 'ready') return;
     const myToken = ++runTokenRef.current;
@@ -179,6 +171,14 @@ export default function App() {
     }
   }, [modelStatus, imagenLista]);
   analizarRef.current = analizar;
+
+  // Retry auto-analysis when model finishes loading
+  useEffect(() => {
+    if (modelStatus === 'ready' && pendingAutoRef.current && imageURL) {
+      pendingAutoRef.current = false;
+      analizar();
+    }
+  }, [modelStatus, imageURL, analizar]);
 
   const setImage = useCallback(
     (url, { auto = false } = {}) => {
