@@ -1,28 +1,29 @@
-/* Tokens de diseño — slate académico.
-   Paleta fría con subtonos azul-gris, acento cobre/cobre envejecido.
-   Diseñada para transmitir seriedad clínica sin caer en lo genérico. */
+/* Tokens de diseño — Lila Clínico.
+   Base carbón con subtonos violeta, acento lila (#a78bfa).
+   Verde esmeralda para benigno, rosa para maligno.
+   Fondo sólido, bordes limpios, sin glassmorphism excesivo. */
 :root {
   color-scheme: dark;
 
-  --bg: #0a0b0f;
-  --bg-elevated: #12141a;
-  --card: #161820;
-  --card-border: #252830;
-  --card-edge: #353840;
+  --bg: #0a0a10;
+  --bg-elevated: #111118;
+  --card: #15151e;
+  --card-border: #1e1e2a;
+  --card-edge: #2a2a3a;
 
-  --text: #d4d7de;
-  --muted: #7c8190;
-  --faint: #515560;
+  --text: #dddce6;
+  --muted: #7876a0;
+  --faint: #5c5a80;
 
-  --accent: #c4915a;
-  --accent-dim: #a87d4c;
-  --accent-soft: rgba(196, 145, 90, 0.1);
+  --accent: #a78bfa;
+  --accent-dim: #8b6fe0;
+  --accent-soft: rgba(167, 139, 250, 0.08);
 
-  --benign: #5a9e72;
-  --benign-bg: rgba(90, 158, 114, 0.08);
-  --malignant: #c25f56;
-  --malignant-bg: rgba(194, 95, 86, 0.08);
-  --warning: #c4915a;
+  --benign: #34d399;
+  --benign-bg: rgba(52, 211, 153, 0.10);
+  --malignant: #fb7185;
+  --malignant-bg: rgba(251, 113, 133, 0.10);
+  --warning: #fbbf24;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -34,14 +35,10 @@
   font-family: var(--sans);
 }
 
-/* Textura de papel sutil: un SVG filter de fractal noise superpuesto
-   al body. Da sensación de superficie orgánica sin costo de descarga. */
-
 * {
   box-sizing: border-box;
 }
 
-/* Respeta la preferencia de movimiento reducido del sistema operativo */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -57,24 +54,9 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--text);
-  line-height: 1.55;
+  line-height: 1.5;
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-}
-
-/* Grain overlay: textura estática de papel. Se renderiza una sola vez
-   al cargar la página (sin animación, sin coste continuo de repaint).
-   El SVG de fractalNoise genera un patrón orgánico sutil. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.4;
-  will-change: auto;
 }
 
 a {
@@ -97,7 +79,6 @@ code,
   color: var(--bg);
 }
 
-/* Utilidad para ocultar visualmente pero mantener accesible para screen readers */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -110,7 +91,6 @@ code,
   border: 0;
 }
 
-/* Skip navigation link: invisible hasta que recibe foco. */
 .skip-link {
   position: absolute;
   top: -100%;

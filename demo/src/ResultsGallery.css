@@ -84,7 +84,7 @@
 .batch-btn:hover:not(:disabled) {
   background: var(--accent-dim);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(212, 160, 83, 0.2);
+  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
 }
 .batch-btn:active:not(:disabled) {
   transform: translateY(0);
@@ -111,8 +111,7 @@
   border-color: var(--accent);
 }
 
-/* Toggle del modo desafío. Un <label> arropando un checkbox real para que
-   el espacio clicable sea grande y el estado siga siendo accesible. */
+/* Toggle del modo desafío */
 .challenge-toggle {
   display: inline-flex;
   align-items: center;
@@ -138,15 +137,14 @@
 }
 .challenge-toggle input { accent-color: var(--accent); }
 
-/* Banner de scoring: aparece cuando estamos clasificando el pool entero
-   para los modos derivados. Carga útil = ~120 inferencias secuenciales. */
+/* Banner de scoring */
 .scoring-banner {
   margin-bottom: 1.2rem;
   padding: 0.7rem 0.9rem;
   font-size: 0.82rem;
   color: var(--accent);
   background: var(--accent-soft);
-  border: 1px solid rgba(212, 160, 83, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.15);
   border-radius: var(--radius-sm);
 }
 .scoring-bar {
@@ -164,11 +162,10 @@
 .scoring-error {
   color: var(--malignant);
   background: var(--malignant-bg);
-  border-color: rgba(212, 115, 108, 0.2);
+  border-color: rgba(251, 113, 133, 0.15);
 }
 
-/* Estado vacío para modos que no tienen ninguna muestra que mostrar
-   (típicamente "Falsos negativos/positivos" si el pool es 100% correcto). */
+/* Estado vacío */
 .empty-state {
   padding: 1.2rem;
   text-align: center;
@@ -179,7 +176,7 @@
   margin-bottom: 1.4rem;
 }
 
-/* Stats del desafío: línea sencilla con "Tú vs Modelo". */
+/* Stats del desafío */
 .challenge-stats {
   display: flex;
   flex-wrap: wrap;
@@ -212,13 +209,11 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   margin-bottom: 1.4rem;
-  border: 1px solid rgba(48, 54, 61, 0.5);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
-  background: rgba(22, 27, 34, 0.5);
+  background: var(--card);
   animation: stats-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
   overflow: hidden;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 @media (prefers-reduced-motion: reduce) {
   .batch-stats { animation: none; }
@@ -266,19 +261,17 @@
 }
 .sample-card {
   position: relative;
-  background: rgba(22, 27, 34, 0.5);
-  border: 1px solid rgba(48, 54, 61, 0.5);
+  background: var(--card);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   animation: card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
   transform-style: preserve-3d;
-  will-change: transform;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 .sample-card:hover {
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(212, 160, 83, 0.15);
+  will-change: transform;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(167, 139, 250, 0.12);
 }
 @media (prefers-reduced-motion: reduce) {
   .sample-card { animation: none; }
@@ -300,9 +293,6 @@
   background: var(--bg);
 }
 
-/* Badge "M" / "B" sobre la foto: clase real visible de un vistazo,
-   sin tener que leer el pequeño "Etiqueta:" de abajo. Distingue la
-   verdad del dataset de la predicción (que va con borde + texto). */
 .sample-real-badge {
   position: absolute;
   top: 0.4rem;
@@ -316,8 +306,7 @@
   font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 600;
-  background: rgba(12, 16, 24, 0.82);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 10, 16, 0.85);
   z-index: 1;
   pointer-events: none;
 }
@@ -351,7 +340,6 @@
   color: var(--malignant);
 }
 
-/* Línea "Tú: ..." debajo de la predicción del modelo en challenge. */
 .sample-guess {
   font-weight: 500;
 }

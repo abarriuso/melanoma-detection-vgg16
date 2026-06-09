@@ -17,7 +17,9 @@ function cspPlugin() {
       // eslint-disable-next-line no-undef
       const isDev = server ? true : process.env.NODE_ENV !== 'production';
       const scriptSrc = isDev ? "script-src 'self' 'unsafe-eval';" : "script-src 'self';";
-      const csp = `default-src 'self'; ${scriptSrc} style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; child-src 'none'; media-src 'none'; upgrade-insecure-requests;`;
+      // Nota: frame-ancestors solo funciona vía HTTP headers, no en meta tags.
+      // GitHub Pages no permite custom headers, así que usamos frame-buster JS.
+      const csp = `default-src 'self'; ${scriptSrc} style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; object-src 'none'; child-src 'none'; media-src 'none'; upgrade-insecure-requests;`;
       return html.replace('</head>', `  <meta http-equiv="Content-Security-Policy" content="${csp}">\n</head>`);
     },
   };
@@ -46,8 +48,8 @@ export default defineConfig({
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,
         display: 'standalone',
-        background_color: '#0d1117',
-        theme_color: '#0d1117',
+        background_color: '#0a0a10',
+        theme_color: '#0a0a10',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

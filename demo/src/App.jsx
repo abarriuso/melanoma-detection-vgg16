@@ -63,7 +63,8 @@ export default function App() {
   useEffect(() => () => { mountedRef.current = false; }, []);
   const base = import.meta.env.BASE_URL;
 
-  // Ejemplos fijos del dataset (1 benigno + 1 maligno) para prueba rápida.
+  // Ejemplos fijos del dataset (3 benignos + 3 malignos) para prueba rápida.
+  // Elegidos del manifest como casos representativos y claros.
   // Además: si la URL trae ?sample=melanoma_X.jpg, intentamos precargar
   // y analizar esa muestra. Permite enlaces directos a casos concretos.
   useEffect(() => {
@@ -75,10 +76,10 @@ export default function App() {
       })
       .then((d) => {
         if (!mounted) return;
-        // Primer ejemplo de cada clase como representativos fijos
-        const pickFirst = (arr, real) =>
-          arr.length > 0 ? [{ real, path: `${base}samples/${real}/${arr[0]}` }] : [];
-        setExamples([...pickFirst(d.malignant, 'malignant'), ...pickFirst(d.benign, 'benign')]);
+        // 3 ejemplos de cada clase: los primeros del manifest (curados)
+        const pickN = (arr, real, n = 3) =>
+          arr.slice(0, n).map((name) => ({ real, path: `${base}samples/${real}/${name}` }));
+        setExamples([...pickN(d.malignant, 'malignant'), ...pickN(d.benign, 'benign')]);
 
         // Resolución del parámetro ?sample=, con espera implícita a que el
         // modelo esté listo (autoRun arranca cuando la imagen decodifica).
@@ -335,12 +336,13 @@ export default function App() {
       </nav>
 
       <header className="hero">
-        <p className="hero-tag">Fine-tuning · VGG16 · TensorFlow.js · Client-side</p>
+        <p className="hero-tag">Inteligencia artificial · Análisis en tu navegador · Sin envío de datos</p>
         <h1>Detección de melanoma mediante deep learning</h1>
         <p className="subtitle">
           Clasificación dermoscópica de lesiones cutáneas mediante una red neuronal
           VGG16 con fine-tuning (AUC 0.9606). El modelo se ejecuta íntegramente en
           el navegador — ninguna imagen se transfiere a un servidor externo.
+          Análisis rápido (~0.2 segundos).
         </p>
       </header>
 
@@ -495,6 +497,7 @@ export default function App() {
           className="analyze-btn"
           onClick={analizar}
           disabled={!imageURL || imageError || modelStatus !== 'ready' || predicting}
+          title="El análisis se ejecuta en tu navegador. La imagen no sale de tu dispositivo."
         >
           {predicting ? 'Analizando…' : 'Analizar imagen'}
         </button>
@@ -549,14 +552,20 @@ export default function App() {
             </div>
             {!result.esMaligno && (
               <p className="result-reminder">
-                Recuerda: el modelo tiene ~12% de falsos negativos. Si tienes una lesión que te
+                Esto no es un diagnóstico. El modelo tiene ~12% de falsos negativos. Si tienes una lesión que te
                 preocupa, consulta a un dermatólogo independientemente de esta herramienta.
+              </p>
+            )}
+            {result.esMaligno && (
+              <p className="result-reminder malignant-reminder">
+                Esto no es un diagnóstico. Consulta a un dermatólogo para una evaluación clínica completa.
               </p>
             )}
             <p className="result-disclaimer">
               La confianza refleja la decisión del modelo, no el riesgo real. En clínica,
               la prevalencia de melanoma es muy baja (~1-5%). No considera tu historia clínica,
               exposición solar ni antecedentes familiares.
+              <span className="threshold-note"> Umbral de decisión: {UMBRAL}.</span>
             </p>
           </div>
         )}

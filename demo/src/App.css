@@ -1,5 +1,4 @@
-/* Layout principal. env(safe-area-inset-*) deja respiración en iPhones
-   con notch/Dynamic Island cuando se combina con viewport-fit=cover. */
+/* Layout principal */
 .app {
   max-width: 680px;
   margin: 0 auto;
@@ -10,8 +9,7 @@
     max(1.25rem, env(safe-area-inset-left));
 }
 
-/* CTA discreto hacia el notebook / código fuente. Visitantes técnicos
-   buscan el detalle del entrenamiento sin tener que llegar al footer. */
+/* === Top links =================================================== */
 .toplinks {
   display: flex;
   justify-content: flex-end;
@@ -46,18 +44,18 @@
   position: absolute;
   top: -1px;
   left: 0;
-  right: 0;
-  height: 6px;
-  background: linear-gradient(90deg, var(--accent), transparent 80%);
-  opacity: 0.15;
+  width: 120px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
   pointer-events: none;
 }
 
 .hero h1 {
-  font-size: 2.05rem;
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
   margin: 0 0 0.85rem;
   color: var(--text);
   text-wrap: balance;
@@ -67,49 +65,32 @@
   margin-bottom: 0.8rem;
   padding: 0.3rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
   background: var(--accent-soft);
-  border: 1px solid rgba(224, 168, 78, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.15);
   border-radius: var(--radius-sm);
 }
 
 .subtitle {
   color: var(--muted);
   margin: 0 0 1.8rem;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.92rem;
+  line-height: 1.5;
   max-width: 40em;
 }
 
 /* === Panel ====================================================== */
 .panel {
-  background: rgba(28, 33, 40, 0.6);
-  border: 1px solid rgba(48, 54, 61, 0.6);
+  background: var(--card);
+  border: 1px solid var(--card-border);
   margin-bottom: 1.4rem;
   border-radius: var(--radius-md);
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    0 8px 24px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.015) 0%,
-    transparent 50%,
-    rgba(0, 0, 0, 0.02) 100%
-  );
-  pointer-events: none;
 }
 
 .panel-head {
@@ -121,14 +102,14 @@
 }
 .panel-idx {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--accent);
   font-weight: 500;
   letter-spacing: 0.04em;
   opacity: 0.8;
 }
 .panel-head h2 {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   margin: 0;
   letter-spacing: -0.005em;
@@ -160,32 +141,24 @@
 .status-loading {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(212, 160, 83, 0.2);
+  border-color: rgba(167, 139, 250, 0.15);
+  position: relative;
+  overflow: hidden;
 }
 .status-loading::before { background: var(--accent); }
-/* Estado "ready" usa el accent (ámb), no el verde benigno. Reservamos
-   verde/rojo exclusivamente para la clasificación clínica (benigno/maligno);
-   reusar el verde aquí hace que la vista mezcle "modelo OK" con "lesión OK". */
 .status-ready {
   color: var(--accent);
   background: var(--accent-soft);
-  border-color: rgba(212, 160, 83, 0.2);
+  border-color: rgba(167, 139, 250, 0.15);
 }
 .status-ready::before { background: var(--accent); }
 .status-error {
   color: var(--malignant);
   background: var(--malignant-bg);
-  border-color: rgba(212, 115, 108, 0.2);
+  border-color: rgba(251, 113, 133, 0.15);
 }
 .status-error::before { background: var(--malignant); }
 
-/* Barra de progreso de carga del modelo: línea fina inferior dentro del
-   propio chip de estado. Útil porque pasar 15 MB del 0 al 100 % puede
-   tardar varios segundos en redes lentas y un solo número da poca señal. */
-.status-loading {
-  position: relative;
-  overflow: hidden;
-}
 .status-progress {
   position: absolute;
   bottom: 0;
@@ -197,7 +170,7 @@
 
 /* === Dropzone =================================================== */
 .dropzone {
-  border: 1.5px dashed var(--card-edge);
+  border: 2px dashed var(--card-edge);
   border-radius: var(--radius-md);
   min-height: 220px;
   display: flex;
@@ -206,27 +179,8 @@
   cursor: pointer;
   transition: border-color 0.25s ease, background 0.25s ease;
   overflow: hidden;
-  background: rgba(22, 27, 34, 0.5);
+  background: var(--bg-elevated);
   position: relative;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.dropzone::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(212, 160, 83, 0.03) 0%,
-    transparent 70%
-  );
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.dropzone:hover::before,
-.dropzone.drag-active::before {
-  opacity: 1;
 }
 .dropzone:hover,
 .dropzone.drag-active {
@@ -270,6 +224,7 @@
   color: var(--faint);
 }
 
+/* === Preview ==================================================== */
 .preview-wrap {
   position: relative;
   display: inline-block;
@@ -281,7 +236,7 @@
   display: block;
 }
 
-/* === Scanning line: barra que barre la imagen durante el análisis ===== */
+/* === Scanning line ============================================== */
 @keyframes scan-sweep {
   0%   { top: -2px; opacity: 0; }
   10%  { opacity: 1; }
@@ -301,8 +256,8 @@
     transparent 100%
   );
   box-shadow:
-    0 0 6px rgba(212, 160, 83, 0.5),
-    0 0 14px rgba(212, 160, 83, 0.2);
+    0 0 6px rgba(167, 139, 250, 0.5),
+    0 0 14px rgba(167, 139, 250, 0.2);
   pointer-events: none;
   z-index: 2;
   animation: scan-sweep 1.8s ease-in-out infinite;
@@ -311,10 +266,7 @@
   .scan-line { animation: none; opacity: 0; }
 }
 
-/* Canvas que renderiza el Grad-CAM sobre la preview. Se dimensiona al
-   100% del wrap para encajar con la <img> que lleva max-height: 320px,
-   con mix-blend-mode: lighten para que las zonas oscuras del heatmap no
-   tapen la lesión. Oculto por defecto; fade-in al activar. */
+/* === Grad-CAM canvas =========================================== */
 .preview-cam {
   position: absolute;
   inset: 0;
@@ -332,8 +284,7 @@
   .preview-cam { transition: none; }
 }
 
-/* Controles del Grad-CAM: botón pegado a la preview, sin separación
-   visual extra. is-on usa el accent para indicar que la capa está activa. */
+/* === Grad-CAM controls ========================================= */
 .cam-controls {
   margin-top: 0.7rem;
   display: flex;
@@ -370,6 +321,8 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* === Preview clear button ====================================== */
 .preview-clear {
   position: absolute;
   top: 0.5rem;
@@ -378,7 +331,7 @@
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--card-edge);
-  background: rgba(17, 17, 16, 0.82);
+  background: rgba(10, 10, 16, 0.85);
   color: var(--text);
   font-size: 1.2rem;
   line-height: 1;
@@ -387,7 +340,6 @@
   align-items: center;
   justify-content: center;
   transition: background 0.2s ease, border-color 0.2s ease;
-  backdrop-filter: blur(4px);
 }
 .preview-clear:hover {
   background: var(--malignant-bg);
@@ -399,20 +351,19 @@
   outline-offset: 2px;
 }
 
-/* Mensaje de rechazo de archivo (tipo o tamaño). Visualmente similar al
-   estado de error del modelo, pero a nivel de sección, no global. */
+/* === File error ================================================ */
 .file-error {
   margin-top: 0.9rem;
   padding: 0.6rem 0.8rem;
   font-size: 0.82rem;
   color: var(--malignant);
   background: var(--malignant-bg);
-  border: 1px solid rgba(251, 113, 133, 0.28);
+  border: 1px solid rgba(251, 113, 133, 0.2);
   border-left: 3px solid var(--malignant);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
-/* === Ejemplos =================================================== */
+/* === Examples ================================================== */
 .examples {
   margin-top: 1.3rem;
   padding-top: 1.2rem;
@@ -442,7 +393,7 @@
 .example-thumb:hover:not(:disabled) {
   transform: translateY(-2px);
   border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .example-thumb:focus-visible {
   outline: 2px solid var(--accent);
@@ -459,12 +410,9 @@
   display: block;
 }
 
-/* Pulse de onboarding: en la primera visita, el primer thumb late
-   suavemente para invitar a clicar. Se apaga en cuanto el usuario
-   interactúa con cualquier imagen (subida o ejemplo). */
 @keyframes onboard-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(212, 160, 83, 0.45); }
-  100% { box-shadow: 0 0 0 10px rgba(212, 160, 83, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4); }
+  100% { box-shadow: 0 0 0 10px rgba(167, 139, 250, 0); }
 }
 .example-thumb.is-pulse {
   animation: onboard-pulse 1.6s ease-out infinite;
@@ -474,7 +422,7 @@
   .example-thumb.is-pulse { animation: none; }
 }
 
-/* === Botón principal ============================================ */
+/* === Analyze button ============================================ */
 .analyze-btn {
   width: 100%;
   margin-top: 1.4rem;
@@ -493,7 +441,7 @@
 .analyze-btn:hover:not(:disabled) {
   background: var(--accent-dim);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(212, 160, 83, 0.2);
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.2);
 }
 .analyze-btn:active:not(:disabled) {
   transform: translateY(0);
@@ -510,7 +458,7 @@
   outline-offset: 2px;
 }
 
-/* === Resultado ================================================== */
+/* === Result ==================================================== */
 @keyframes result-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -527,34 +475,18 @@
   border-radius: var(--radius-md);
   animation: result-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   position: relative;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.result::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.02) 0%,
-    transparent 100%
-  );
-  pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .result { animation: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .result-label { animation: none; }
-}
 .result.benign {
   background: var(--benign-bg);
-  border-color: rgba(123, 196, 127, 0.28);
+  border-color: rgba(52, 211, 153, 0.2);
   border-left-color: var(--benign);
 }
 .result.malignant {
   background: var(--malignant-bg);
-  border-color: rgba(212, 115, 108, 0.28);
+  border-color: rgba(251, 113, 133, 0.2);
   border-left-color: var(--malignant);
 }
 
@@ -565,35 +497,21 @@
   gap: 0.8rem;
   margin-bottom: 0.7rem;
 }
-/* Glitch effect en el label del resultado */
-@keyframes glitch {
-  0%   { clip-path: inset(0 0 90% 0); transform: translate(-2px, 0); }
-  10%  { clip-path: inset(40% 0 30% 0); transform: translate(2px, 0); }
-  20%  { clip-path: inset(70% 0 5% 0); transform: translate(-1px, 0); }
-  30%  { clip-path: inset(10% 0 60% 0); transform: translate(1px, 0); }
-  40%  { clip-path: inset(0); transform: translate(0); }
-  100% { clip-path: inset(0); transform: translate(0); }
-}
-@keyframes glitch-color {
-  0%   { text-shadow: 2px 0 var(--malignant), -2px 0 var(--accent); }
-  20%  { text-shadow: -2px 0 var(--malignant), 2px 0 var(--accent); }
-  40%  { text-shadow: 0 0 transparent; }
-  100% { text-shadow: 0 0 transparent; }
-}
+
 .result-label {
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  animation: glitch 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both,
-             glitch-color 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation: result-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-label { animation: none; }
 }
 .result-meta {
   display: flex;
   align-items: baseline;
   gap: 0.8rem;
 }
-/* Chip de latencia siempre visible. Reportar "esto va rápido" es parte
-   del valor de la demo; meterlo dentro de <details> lo escondía. */
 .result-latency {
   font-family: var(--mono);
   font-size: 0.75rem;
@@ -627,9 +545,9 @@
   from { width: 0%; }
 }
 @keyframes confidence-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(212, 160, 83, 0); }
-  50%  { box-shadow: 0 0 8px 1px rgba(212, 160, 83, 0.3); }
-  100% { box-shadow: 0 0 0 0 rgba(212, 160, 83, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); }
+  50%  { box-shadow: 0 0 8px 1px rgba(167, 139, 250, 0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); }
 }
 .confidence-fill {
   height: 100%;
@@ -643,7 +561,6 @@
   .confidence-fill { animation: none; }
 }
 
-/* Bloque de aviso bajo el resultado (falsos negativos, calibración). */
 .result-reminder {
   margin-top: 0.7rem;
   padding: 0.5rem 0.7rem;
@@ -660,10 +577,15 @@
   color: var(--faint);
   line-height: 1.5;
 }
+.malignant-reminder {
+  border-left-color: var(--malignant);
+  background: var(--malignant-bg);
+}
+.threshold-note {
+  font-family: var(--mono);
+  color: var(--muted);
+}
 
-/* Contador local de uso. Acompañado del disclaimer en el title de
-   que es 100% local; aparece solo cuando count > 0 para no aparecer
-   vacío en la primera visita. */
 .usage-stats {
   margin: 1.2rem 0 0;
   font-family: var(--mono);
@@ -674,8 +596,6 @@
 }
 
 /* === Disclaimer ================================================= */
-/* Texto legal: usa --muted (cumple contraste AA), no --faint.
-   disclaimer--top se posiciona antes del dropzone para máxima visibilidad. */
 .disclaimer {
   margin-top: 0.8rem;
   font-size: 0.78rem;
@@ -690,11 +610,9 @@
   padding: 0.65rem 0.8rem;
   border-top: none;
   border-left: 3px solid var(--accent);
-  background: rgba(240, 182, 84, 0.06);
+  background: var(--accent-soft);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 0.82rem;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 /* === Footer ===================================================== */
