@@ -40,8 +40,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'og.png'],
       manifest: {
-        name: 'Detección de melanoma — VGG16 fine-tuning',
-        short_name: 'Melanoma VGG16',
+        name: 'Segunda opinión para lesiones de piel',
+        short_name: 'Melanoma IA',
         description:
           'Clasificación dermoscópica de lesiones cutáneas con VGG16 fine-tuned. Inferencia 100% client-side con TensorFlow.js.',
         lang: 'es',

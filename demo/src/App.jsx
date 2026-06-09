@@ -336,13 +336,14 @@ export default function App() {
       </nav>
 
       <header className="hero">
-        <p className="hero-tag">Inteligencia artificial · Análisis en tu navegador · Sin envío de datos</p>
-        <h1>Detección de melanoma mediante deep learning</h1>
+        <h1>Segunda opinión para lesiones de piel</h1>
         <p className="subtitle">
-          Clasificación dermoscópica de lesiones cutáneas mediante una red neuronal
-          VGG16 con fine-tuning (AUC 0.9606). El modelo se ejecuta íntegramente en
-          el navegador — ninguna imagen se transfiere a un servidor externo.
-          Análisis rápido (~0.2 segundos).
+          Modelo VGG16 fine-tuned · AUC 0.9606 · ~0.2 s por análisis.
+          Tus imágenes nunca salen de tu navegador.
+        </p>
+        <p className="hero-warn">
+          No es un dispositivo médico. Tasa de falsos negativos: ~12%.
+          Si te preocupa una lesión, consulta a un dermatólogo.
         </p>
       </header>
 
