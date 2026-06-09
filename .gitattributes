@@ -1,0 +1,26 @@
+# Ajustes para GitHub Linguist (la barra de "Languages" del repo).
+# El notebook con outputs embebidos eclipsa al codigo real por puro tamano en bytes.
+# Con estas reglas, los porcentajes reflejan el codigo del proyecto, no el peso de los JSON.
+
+# Notebooks: relevantes pero NO deben dominar el porcentaje (outputs en base64, graficas...)
+*.ipynb linguist-documentation
+
+# Modelo TF.js convertido: binarios + JSON generado por el converter
+demo/public/model/** linguist-vendored
+
+# Dataset de muestras: imagenes, no codigo del proyecto
+demo/public/samples/** linguist-vendored
+
+# Assets para el README
+assets/** linguist-vendored
+
+# Lockfile generado por npm
+**/package-lock.json linguist-generated -diff
+
+# Normalizar fin de linea para evitar warnings CRLF en commits
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.bin binary

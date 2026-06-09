@@ -1,0 +1,57 @@
+# ─── Modelos entrenados ───
+# Los .keras incluyen pesos + estado del optimizador (~184 MB cada uno).
+# Superan el límite de 100 MB de GitHub. Publicarlos en Releases si se necesita.
+*.keras
+*.h5
+*.hdf5
+*.pb
+
+# ─── Dataset (descargar de Kaggle, no versionar) ───
+# https://www.kaggle.com/datasets/hasnainjaved/melanoma-skin-cancer-dataset-of-10000-images
+melanoma_cancer_dataset/
+archive/
+dataset/
+*.zip
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.Python
+
+# ─── Jupyter ───
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# ─── Notebooks con outputs ejecutados (solo local, no se publica) ───
+# El notebook que se versiona es el "vacío" (sin outputs en base64).
+# Las versiones ejecutadas o de comparación se quedan en local.
+melanoma_detection_v2_baseline.ipynb
+melanoma_detection_v2_ejecutado.ipynb
+melanoma_detection_v2_*.ipynb
+
+# ─── Nota de estado/continuidad (solo local) ───
+ESTADO.md
+
+# ─── Credenciales (nunca versionar) ───
+*.pem
+*.key
+.env
+
+# ─── Instaladores u otros binarios que puedan acabar en la raíz ───
+*.exe
+*.msi
+*.dmg
+*.stl
+
+# ─── Node (en caso de npm install accidental en la raíz) ───
+node_modules/
+dist/
+
+# ─── Sistema operativo ───
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,382 @@
+.results-section {
+  margin-top: 1.4rem;
+}
+
+.results-intro {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.1rem;
+  line-height: 1.55;
+  max-width: 42em;
+}
+
+/* === Selector de modo (tabs) ===================================== */
+.mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.55rem;
+  padding: 0.25rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+.mode-btn {
+  flex: 1 1 auto;
+  padding: 0.65rem 0.7rem;
+  min-height: 44px;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.mode-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+.mode-btn.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.mode-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mode-desc {
+  font-size: 0.78rem;
+  color: var(--faint);
+  margin: 0 0 1.1rem;
+  line-height: 1.45;
+  min-height: 1.1rem;
+}
+
+/* === Acciones ==================================================== */
+.batch-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.3rem;
+}
+.batch-btn {
+  flex: 1 1 auto;
+  padding: 0.85rem 1.2rem;
+  min-height: 44px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.batch-btn:hover:not(:disabled) {
+  background: var(--accent-dim);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 160, 83, 0.2);
+}
+.batch-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.batch-btn:disabled {
+  background: var(--card-border);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.batch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.batch-btn-secondary {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--card-edge);
+}
+.batch-btn-secondary:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* Toggle del modo desafío. Un <label> arropando un checkbox real para que
+   el espacio clicable sea grande y el estado siga siendo accesible. */
+.challenge-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--muted);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.challenge-toggle:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+.challenge-toggle.is-on {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.challenge-toggle input { accent-color: var(--accent); }
+
+/* Banner de scoring: aparece cuando estamos clasificando el pool entero
+   para los modos derivados. Carga útil = ~120 inferencias secuenciales. */
+.scoring-banner {
+  margin-bottom: 1.2rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(212, 160, 83, 0.2);
+  border-radius: var(--radius-sm);
+}
+.scoring-bar {
+  margin-top: 0.45rem;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+.scoring-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+.scoring-error {
+  color: var(--malignant);
+  background: var(--malignant-bg);
+  border-color: rgba(212, 115, 108, 0.2);
+}
+
+/* Estado vacío para modos que no tienen ninguna muestra que mostrar
+   (típicamente "Falsos negativos/positivos" si el pool es 100% correcto). */
+.empty-state {
+  padding: 1.2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--faint);
+  border: 1px dashed var(--card-edge);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.4rem;
+}
+
+/* Stats del desafío: línea sencilla con "Tú vs Modelo". */
+.challenge-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
+  margin-bottom: 1.4rem;
+  padding: 0.8rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--card-border);
+}
+.challenge-stats b {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.challenge-progress {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+
+/* === Tarjetas de estadísticas ==================================== */
+@keyframes stats-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.batch-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 1.4rem;
+  border: 1px solid rgba(48, 54, 61, 0.5);
+  border-radius: var(--radius-md);
+  background: rgba(22, 27, 34, 0.5);
+  animation: stats-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .batch-stats { animation: none; }
+}
+.stat {
+  padding: 0.75rem 0.7rem;
+  text-align: left;
+  border-right: 1px solid var(--card-border);
+}
+.stat:last-child {
+  border-right: none;
+}
+.stat-value {
+  display: block;
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.stat-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--faint);
+  margin-top: 0.3rem;
+}
+
+/* === Grid de muestras ============================================ */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.samples-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  perspective: 800px;
+}
+.sample-card {
+  position: relative;
+  background: rgba(22, 27, 34, 0.5);
+  border: 1px solid rgba(48, 54, 61, 0.5);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.sample-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(212, 160, 83, 0.15);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sample-card { animation: none; }
+  .sample-card:hover { transform: none !important; }
+}
+
+.sample-card.card-correct {
+  border-color: var(--benign);
+}
+.sample-card.card-wrong {
+  border-color: var(--malignant);
+}
+
+.sample-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: var(--bg);
+}
+
+/* Badge "M" / "B" sobre la foto: clase real visible de un vistazo,
+   sin tener que leer el pequeño "Etiqueta:" de abajo. Distingue la
+   verdad del dataset de la predicción (que va con borde + texto). */
+.sample-real-badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(12, 16, 24, 0.82);
+  backdrop-filter: blur(4px);
+  z-index: 1;
+  pointer-events: none;
+}
+.sample-real-badge.real-malignant {
+  color: var(--malignant);
+  border: 1px solid var(--malignant);
+}
+.sample-real-badge.real-benign {
+  color: var(--benign);
+  border: 1px solid var(--benign);
+}
+
+.sample-info {
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.sample-real {
+  color: var(--faint);
+}
+.sample-pred {
+  font-weight: 500;
+}
+.pred-ok {
+  color: var(--benign);
+}
+.pred-fail {
+  color: var(--malignant);
+}
+
+/* Línea "Tú: ..." debajo de la predicción del modelo en challenge. */
+.sample-guess {
+  font-weight: 500;
+}
+.guess-ok {
+  color: var(--benign);
+}
+.guess-fail {
+  color: var(--malignant);
+}
+
+/* === Mobile ====================================================== */
+@media (max-width: 540px) {
+  .samples-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .batch-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat:nth-child(2n) {
+    border-right: none;
+  }
+  .stat:nth-child(-n+2) {
+    border-bottom: 1px solid var(--card-border);
+  }
+  .batch-actions {
+    flex-direction: column;
+  }
+}

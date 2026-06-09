@@ -1,0 +1,69 @@
+# Despliegue automático de la demo React a GitHub Pages.
+# Se ejecuta en cada push a main. Para activarlo:
+#   Settings → Pages → Source → GitHub Actions
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permite lanzarlo manualmente desde la pestaña Actions
+
+# Permisos mínimos necesarios (principio de mínimo privilegio).
+# contents:read   → leer el repositorio
+# pages:write     → publicar en GitHub Pages
+# id-token:write  → autenticación OIDC con Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita deploys simultáneos: si hay uno en curso y llega otro push,
+# cancela el anterior y ejecuta el nuevo.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo  # la app React vive en demo/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: demo/package-lock.json
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # npm ci (clean install): instala exactamente lo que dice package-lock.json,
+      # sin modificarlo. Más rápido y reproducible que npm install en CI.
+      - name: Install dependencies
+        run: npm ci
+
+      # Vite genera el build de producción en demo/dist/.
+      # La variable `base` en vite.config.js se encarga de prefijar las rutas
+      # con /melanoma-detection-vgg16/ para que funcionen en GitHub Pages.
+      - name: Build
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
