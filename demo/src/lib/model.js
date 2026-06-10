@@ -7,9 +7,17 @@ const metaCache = new Map();
 let activeModelId = 'vgg16';
 
 let backendPromise = null;
-function ensureBackend() {
+async function ensureBackend() {
   if (backendPromise) return backendPromise;
   backendPromise = (async () => {
+    // Intentar WebGL (GPU). TF.js no tiene webgpu instalado.
+    try {
+      await tf.setBackend('webgl');
+      await tf.ready();
+      return;
+    } catch {
+      // Si falla WebGL (entorno sin GPU), usar CPU
+    }
     await tf.setBackend('cpu');
     await tf.ready();
   })();
