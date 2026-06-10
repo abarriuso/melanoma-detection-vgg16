@@ -471,7 +471,8 @@ umbral de decisión debería bajarse de 0.5 a ~0.3 para minimizar falsos negativ
 
 **Aviso legal:** este proyecto es académico. No es un dispositivo médico ni
 debe usarse para diagnóstico real. Cualquier sospecha clínica requiere
-valoración por un dermatólogo certificado.
+valoración por un dermatólogo certificado. Texto completo en
+[DISCLAIMER.md](DISCLAIMER.md).
 
 ---
 
