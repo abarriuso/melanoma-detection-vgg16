@@ -3,8 +3,8 @@ import { predictImage } from './lib/model';
 import { DATASET_NAME, DATASET_URL } from './lib/constants';
 import './ResultsGallery.css';
 
-// Versión del cache de scores. Bumpear si cambia el modelo (los pesos
-// nuevos invalidan los scores antiguos, aunque las imágenes sean las mismas).
+// Versión del cache de scores. Se incluye modelId en la clave para que
+// cada modelo tenga su propio cache (modelos distintos dan scores distintos).
 const SCORES_VERSION = 1;
 const SCORES_KEY = `samples-scores-v${SCORES_VERSION}`;
 // Tamaño del lote visible. El pool real es mucho mayor (120+); en pantalla
@@ -29,9 +29,9 @@ export function shuffle(arr) {
 
 // Lee el cache de scores de localStorage. Tolerante: si el JSON está
 // corrupto o la versión no coincide, devolvemos {} sin reventar.
-export function loadScoresCache() {
+export function loadScoresCache(key) {
   try {
-    const raw = localStorage.getItem(SCORES_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return (parsed && typeof parsed === 'object' ? parsed : {});
@@ -40,9 +40,9 @@ export function loadScoresCache() {
   }
 }
 
-export function saveScoresCache(map) {
+export function saveScoresCache(map, key) {
   try {
-    localStorage.setItem(SCORES_KEY, JSON.stringify(map));
+    localStorage.setItem(key, JSON.stringify(map));
     return true;
   } catch {
     // localStorage lleno o deshabilitado; degradamos en silencio.
@@ -74,13 +74,14 @@ function loadImage(src) {
   });
 }
 
-export default function ResultsGallery() {
+export default function ResultsGallery({ modelId }) {
   const base = import.meta.env.BASE_URL;
+  const SCORES_KEY = `samples-scores-v${SCORES_VERSION}-${modelId}`;
 
   const [pool, setPool] = useState([]);          // flat: [{file, real, path}] x ~120
   const [mode, setMode] = useState('random');
   const [samples, setSamples] = useState([]);     // visible: [{...pool, pred, score}]
-  const [scoresMap, setScoresMap] = useState(loadScoresCache);
+  const [scoresMap, setScoresMap] = useState(() => loadScoresCache(SCORES_KEY));
   const [scoringStatus, setScoringStatus] = useState('idle'); // idle | scoring | error
   const [scoringProgress, setScoringProgress] = useState({ done: 0, total: 0 });
   const [running, setRunning] = useState(false);
@@ -203,12 +204,12 @@ export default function ResultsGallery() {
       const s = missing[i];
       try {
         const img = await loadImage(s.path);
-        const { calibrated } = await predictImage(img);
+        const { calibrated } = await predictImage(img, modelId);
         next[s.file] = calibrated;
         if (i % 5 === 0 || i === missing.length - 1) {
           if (!mountedRef.current) return;
           setScoresMap({ ...next });
-          const saved = saveScoresCache(next);
+          const saved = saveScoresCache(next, SCORES_KEY);
           if (!saved && storageAvailable) {
             setStorageAvailable(false);
           }
@@ -224,7 +225,7 @@ export default function ResultsGallery() {
     }
     if (!mountedRef.current || myToken !== opTokenRef.current) return;
     setScoresMap(next);
-    const saved = saveScoresCache(next);
+    const saved = saveScoresCache(next, SCORES_KEY);
     if (!saved && storageAvailable) {
       setStorageAvailable(false);
     }
@@ -255,7 +256,7 @@ export default function ResultsGallery() {
         if (!img) continue;
         try {
           if (!(img.complete && img.naturalWidth > 0)) await img.decode();
-          const { calibrated } = await predictImage(img);
+          const { calibrated } = await predictImage(img, modelId);
           updated[i] = {
             ...updated[i],
             score: calibrated,
@@ -275,7 +276,7 @@ export default function ResultsGallery() {
       if (Object.keys(scoreUpdates).length > 0) {
         setScoresMap((prev) => {
           const merged = { ...prev, ...scoreUpdates };
-          const saved = saveScoresCache(merged);
+          const saved = saveScoresCache(merged, SCORES_KEY);
           if (!saved && storageAvailable) {
             setStorageAvailable(false);
           }

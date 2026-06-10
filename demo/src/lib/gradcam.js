@@ -1,191 +1,150 @@
 import * as tf from '@tensorflow/tfjs';
+import { getModel } from './constants';
 
-// Capa convolucional cuyo gradiente queremos visualizar. block5_conv3 es la
-// última conv del backbone VGG16, justo antes del pool global; coincide con
-// la capa que el notebook usa para Grad-CAM++ por consistencia.
-// Posibles nombres en el modelo convertido (TF.js a veces renombra capas).
-const TARGET_LAYER_CANDIDATES = [
-  'block5_conv3',
-  'block5_conv3_1',  // posible sufijo en conversión
-  'conv5_block3_conv',  // formato ResNet-style
-];
-const INPUT_SIZE = 224;
-
-// El "modelo cabeza" (activations -> prediction) se reconstruye partiendo
-// las capas finales del modelo original. Es caro de instanciar y no cambia,
-// así que lo cacheamos por modelo (usando WeakMap por si hay reload).
+const TARGET_LAYER_CANDIDATES = ['block5_conv3', 'block5_conv3_1', 'conv5_block3_conv'];
 const splitCache = new WeakMap();
-
-function findTargetLayer(model) {
-  for (const name of TARGET_LAYER_CANDIDATES) {
-    try {
-      return model.getLayer(name);
-    } catch {
-      // continuar con el siguiente candidato
-    }
-  }
-  // Fallback: buscar la última capa convolucional 4D
-  const convLayers = model.layers.filter(l => l.output && l.output.shape?.length === 4);
-  if (convLayers.length > 0) {
-    console.warn(`Grad-CAM: capa objetivo no encontrada, usando última conv: ${convLayers[convLayers.length - 1].name}`);
-    return convLayers[convLayers.length - 1];
-  }
-  throw new Error('No se encontró ninguna capa convolucional 4D para Grad-CAM');
-}
-
-function getSplitModels(model) {
-  const cached = splitCache.get(model);
-  if (cached) return cached;
-
-  const target = findTargetLayer(model);
-  // 1) input -> activations del último conv
-  const actModel = tf.model({ inputs: model.inputs, outputs: target.output });
-
-  // 2) activations -> prediction. Reaplica todas las capas posteriores a la
-  // capa objetivo sobre un nuevo input. Estas capas se reutilizan (mismos
-  // weights), pero en tiempo de inferencia es seguro: Dropout con
-  // training=false (default) es no-op y el resto son deterministas.
-  const layers = model.layers;
-  const idx = layers.findIndex((l) => l.name === target.name);
-  const tail = layers.slice(idx + 1);
-
-  const actShape = target.output.shape.slice(1); // [H, W, C]
-  const actInput = tf.input({ shape: actShape });
-  let x = actInput;
-  for (const layer of tail) {
-    x = layer.apply(x);
-  }
-  const clsModel = tf.model({ inputs: actInput, outputs: x });
-
-  const out = { actModel, clsModel };
-  splitCache.set(model, out);
-  return out;
-}
-
-// Gradiente cacheado por modelo (misma WeakMap que split models)
 const gradCache = new WeakMap();
 
-function getGradFn(clsModel) {
-  let fn = gradCache.get(clsModel);
-  if (!fn) {
-    fn = tf.grad((a) => {
-      const out = clsModel.predict(a);
-      // Verificar que squeeze produce un escalar
-      if (out.shape.length !== 2 || out.shape[0] !== 1 || out.shape[1] !== 1) {
-        console.warn(`Grad-CAM: output shape inesperado [${out.shape}], continuando de todas formas`);
-      }
-      return out.squeeze();
-    });
-    gradCache.set(clsModel, fn);
+function findTargetLayer(model, modelId) {
+  if (modelId) {
+    const entry = getModel(modelId);
+    const named = model.getLayer(entry.targetLayer);
+    if (named) return named;
   }
+  for (const name of TARGET_LAYER_CANDIDATES) {
+    const layer = model.getLayer(name);
+    if (layer) return layer;
+  }
+  const convLayers = model.layers.filter(
+    (l) => l.outputShape && l.outputShape.length === 4 && l.getClassName().includes('Conv'),
+  );
+  return convLayers[convLayers.length - 1];
+}
+
+function getSplitModels(model, modelId) {
+  if (splitCache.has(model)) return splitCache.get(model);
+
+  const targetLayer = findTargetLayer(model, modelId);
+  const actModel = tf.model({ inputs: model.inputs, outputs: targetLayer.output });
+
+  const tempInput = tf.input({ shape: targetLayer.outputShape.slice(1) });
+  let x = tempInput;
+  let found = false;
+  for (const layer of model.layers) {
+    if (!found) {
+      if (layer.name === targetLayer.name) { found = true; }
+      continue;
+    }
+    const config = layer.getConfig();
+    if (config.functional && config.functional === true) continue;
+    try { x = layer.apply(x); } catch (e) { break; }
+  }
+
+  const clsModel = tf.model({ inputs: tempInput, outputs: x });
+  const result = { actModel, clsModel };
+  splitCache.set(model, result);
+  return result;
+}
+
+function getGradFn(clsModel) {
+  if (gradCache.has(clsModel)) return gradCache.get(clsModel);
+  const fn = tf.grad((activations) => {
+    const pred = clsModel.predict(activations);
+    return pred.squeeze();
+  });
+  gradCache.set(clsModel, fn);
   return fn;
 }
 
-/**
- * Calcula Grad-CAM para una imagen ya preprocesada.
- *
- * @param {tf.LayersModel} model         modelo completo
- * @param {HTMLImageElement} imgElement  imagen decodificada
- * @returns {Promise<Float32Array>}      heatmap normalizado [0, 1] de
- *                                       INPUT_SIZE*INPUT_SIZE valores.
- */
-export async function computeGradCAM(model, imgElement) {
-  const { actModel, clsModel } = getSplitModels(model);
+export async function computeGradCAM(model, imgElement, modelId) {
+  const { actModel, clsModel } = getSplitModels(model, modelId);
+  const gradFn = getGradFn(clsModel);
 
-  // Mismo preprocesado que predictImage(): resize 224×224 + /255 + batch.
-  // fromPixelsAsync (TF.js 4+) reemplaza a fromPixels deprecated.
   const pixels = await tf.browser.fromPixelsAsync(imgElement);
-  const input = tf.tidy(() =>
-    pixels
-      .resizeBilinear([INPUT_SIZE, INPUT_SIZE])
-      .toFloat()
-      .div(255)
-      .expandDims(0)
-  );
-
-  // Calcula activations + gradiente y normaliza. Toda la cadena dentro de
-  // tf.tidy salvo el heatmap final, que devolvemos.
-  let heatmapData;
-  let heatmap;
+  let input;
   let activations;
   let grads;
+  let pooledGrads;
+  let cam;
   try {
+    input = tf.tidy(() =>
+      pixels
+        .resizeBilinear([224, 224])
+        .toFloat()
+        .div(255)
+        .expandDims(0)
+    );
     activations = actModel.predict(input);
-
-    // d(prediction) / d(activations). La función gradiente se cachea.
-    const gradFn = getGradFn(clsModel);
     grads = gradFn(activations);
-
-    heatmap = tf.tidy(() => {
-      // alpha_k = mean over (batch, H, W) de los gradientes -> [C]
-      const pooledGrads = grads.mean([0, 1, 2]);
-      // Pesar las activations por sus gradientes promedio
-      const weighted = activations.squeeze().mul(pooledGrads); // [H, W, C]
-      // Sumar canales, aplicar ReLU
-      const camRaw = weighted.sum(-1).relu(); // [H, W]
-      // Normalizar a [0, 1]. Añadimos eps para evitar 0/0 si el heatmap es plano.
-      const minV = camRaw.min();
-      const maxV = camRaw.max();
-      const camNorm = camRaw.sub(minV).div(maxV.sub(minV).add(1e-8));
-      // Resize a tamaño de entrada
-      const resized = tf.image.resizeBilinear(
-        camNorm.expandDims(0).expandDims(-1),
-        [INPUT_SIZE, INPUT_SIZE],
-      );
-      return resized.squeeze(); // [H, W]
+    pooledGrads = grads.mean([0, 1], true);
+    cam = tf.tidy(() => {
+      const weighted = activations.mul(pooledGrads);
+      const summed = weighted.sum(-1).squeeze();
+      const relued = summed.maximum(0);
+      const norm = relued.max();
+      return norm > 0 ? relued.div(norm) : relued;
     });
-
-    heatmapData = await heatmap.data();
+    const result = await cam.resizeBilinear([224, 224]).data();
+    return Array.from(result);
   } finally {
+    pixels.dispose();
+    input?.dispose();
     activations?.dispose();
     grads?.dispose();
-    pixels.dispose();
-    input.dispose();
-    heatmap?.dispose();
+    pooledGrads?.dispose();
+    cam?.dispose();
   }
-
-  return heatmapData;
 }
 
-/**
- * Pinta un heatmap [0, 1] sobre un canvas usando una colormap "inferno-ish":
- * azul oscuro → magenta → naranja → amarillo. La transparencia escala con
- * la magnitud para que las zonas bajas dejen ver la imagen original.
- */
-export function paintHeatmap(canvas, heatmap, width = INPUT_SIZE, height = INPUT_SIZE) {
-  if (!heatmap) return;
-  canvas.width = width;
-  canvas.height = height;
+const COLORMAP = [
+  [0.0, 0.0, 0.0],
+  [0.1, 0.0, 0.2],
+  [0.2, 0.0, 0.5],
+  [0.3, 0.1, 0.7],
+  [0.4, 0.2, 0.9],
+  [0.5, 0.4, 0.8],
+  [0.6, 0.6, 0.6],
+  [0.7, 0.8, 0.4],
+  [0.8, 0.9, 0.2],
+  [0.9, 0.95, 0.05],
+  [1.0, 1.0, 0.0],
+];
+
+function jet(t) {
+  const idx = t * (COLORMAP.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.min(lo + 1, COLORMAP.length - 1);
+  const f = idx - lo;
+  return [
+    COLORMAP[lo][0] + (COLORMAP[hi][0] - COLORMAP[lo][0]) * f,
+    COLORMAP[lo][1] + (COLORMAP[hi][1] - COLORMAP[lo][1]) * f,
+    COLORMAP[lo][2] + (COLORMAP[hi][2] - COLORMAP[lo][2]) * f,
+  ];
+}
+
+export function paintHeatmap(canvas, heatmap, width, height) {
+  if (heatmap == null) return;
+  if (width) canvas.width = width;
+  if (height) canvas.height = height;
   const ctx = canvas.getContext('2d');
-  const img = ctx.createImageData(width, height);
-  const data = img.data;
-  for (let i = 0; i < heatmap.length; i++) {
-    const v = Math.max(0, Math.min(1, heatmap[i]));
-    // Colormap aproximada: paso por (azul→magenta→naranja→amarillo). Tres
-    // tramos lineales sobre v ∈ [0, 1/3, 2/3, 1].
-    let r, g, b;
-    if (v < 1 / 3) {
-      const t = v * 3;
-      r = Math.round(20 + 175 * t); // 20 → 195
-      g = 0;
-      b = Math.round(50 + 100 * (1 - t)); // 150 → 50
-    } else if (v < 2 / 3) {
-      const t = (v - 1 / 3) * 3;
-      r = Math.round(195 + 60 * t); // 195 → 255
-      g = Math.round(80 * t); // 0 → 80
-      b = Math.round(50 * (1 - t)); // 50 → 0
-    } else {
-      const t = (v - 2 / 3) * 3;
-      r = 255;
-      g = Math.round(80 + 175 * t); // 80 → 255
-      b = Math.round(40 * t); // 0 → 40
+  const w = width || canvas.width;
+  const h = height || canvas.height;
+  const imgData = ctx.createImageData(w, h);
+  const d = imgData.data;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      const t = Math.min(Math.max(heatmap[idx], 0), 1);
+      const [r, g, b] = jet(t);
+      const alpha = t * 0.65;
+      const pi = idx * 4;
+      d[pi] = r * 255;
+      d[pi + 1] = g * 255;
+      d[pi + 2] = b * 255;
+      d[pi + 3] = alpha * 255;
     }
-    const a = Math.round(210 * v); // 0 → ~0.82
-    const k = i * 4;
-    data[k] = r;
-    data[k + 1] = g;
-    data[k + 2] = b;
-    data[k + 3] = a;
   }
-  ctx.putImageData(img, 0, 0);
+
+  ctx.putImageData(imgData, 0, 0);
 }

@@ -20,24 +20,24 @@ describe('calibrate', () => {
     const clamped = Math.min(Math.max(p, eps), 1 - eps);
     const logit = Math.log(clamped / (1 - clamped));
     const expected = 1 / (1 + Math.exp(-logit / 0.902));
-    const result = calibrate(p);
+    const result = calibrate(p, 0.902);
     expect(result).toBeCloseTo(expected, 10);
   });
 
   it('returns ~0.5 when input is 0.5 (symmetric point)', () => {
-    const result = calibrate(0.5);
+    const result = calibrate(0.5, 0.902);
     expect(result).toBeCloseTo(0.5, 2);
   });
 
   it('preserves ordering: calibrate(high) > calibrate(low)', () => {
-    const low = calibrate(0.3);
-    const high = calibrate(0.7);
+    const low = calibrate(0.3, 0.902);
+    const high = calibrate(0.7, 0.902);
     expect(high).toBeGreaterThan(low);
   });
 
   it('clamps extreme values without returning NaN or Infinity', () => {
-    const nearZero = calibrate(1e-10);
-    const nearOne = calibrate(1 - 1e-10);
+    const nearZero = calibrate(1e-10, 0.902);
+    const nearOne = calibrate(1 - 1e-10, 0.902);
     expect(Number.isFinite(nearZero)).toBe(true);
     expect(Number.isFinite(nearOne)).toBe(true);
     expect(nearZero).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ describe('calibrate', () => {
   });
 
   it('returns 0.5 for 0.5 regardless of temperature', () => {
-    const result = calibrate(0.5);
+    const result = calibrate(0.5, 0.902);
     expect(result).toBeCloseTo(0.5, 6);
   });
 });

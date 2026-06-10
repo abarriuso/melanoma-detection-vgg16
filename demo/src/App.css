@@ -694,3 +694,78 @@
 .error-boundary-btn:hover {
   background: var(--accent-soft);
 }
+
+/* === Model Selector ============================================ */
+.model-selector {
+  border: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+.model-selector-title {
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.model-selector-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.model-card {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.model-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.model-card.is-active {
+  border-color: var(--accent);
+  background: rgba(212, 160, 83, 0.08);
+}
+.model-card.is-pending {
+  opacity: 0.5;
+  cursor: default;
+}
+.model-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.model-card-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+.model-card-metrics {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+.model-card-detail {
+  font-size: 0.65rem;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.model-card-loading {
+  font-size: 0.65rem;
+  color: var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

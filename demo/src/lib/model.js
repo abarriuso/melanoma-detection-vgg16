@@ -1,130 +1,99 @@
 import * as tf from '@tensorflow/tfjs';
+import { getModel } from './constants';
 
-// BASE_URL incluye el path del repo (p.ej. /melanoma-detection-vgg16/) para
-// que las rutas funcionen correctamente en GitHub Pages, donde la app no está
-// en la raíz del dominio sino en un subdirectorio.
-const MODEL_URL = `${import.meta.env.BASE_URL}model/model.json`;
+const BASE = import.meta.env.BASE_URL;
+const modelCache = new Map();
+const metaCache = new Map();
+let activeModelId = 'vgg16';
 
-// Versión del modelo para invalidar caché cuando se actualiza.
-// Debe coincidir con la versión en model.json (userDefinedMetadata.version).
-const MODEL_VERSION = '1.0.0';
-
-// Patrón singleton: el modelo pesa ~15 MB (tras cuantización uint8) y tarda
-// varios segundos en cargar. Guardamos la promesa para no descargarlo de nuevo.
-let modelPromise = null;
-let modelMetadata = null;
-
-// Inicialización del backend. WebGPU (2-3× más rápido que WebGL en hardware
-// compatible) se carga con dynamic import para que el código solo viaje al
-// cliente cuando el navegador realmente lo soporta. Si falla por cualquier
-// motivo, TF.js cae al backend WebGL/CPU por defecto sin romper la app.
 let backendPromise = null;
 function ensureBackend() {
   if (backendPromise) return backendPromise;
   backendPromise = (async () => {
-    if (typeof navigator !== 'undefined' && 'gpu' in navigator) {
-      try {
-        await import('@tensorflow/tfjs-backend-webgpu');
-        await tf.setBackend('webgpu');
-        await tf.ready();
-        return;
-      } catch (err) {
-        console.warn('WebGPU no disponible, usando backend por defecto:', err);
-      }
-    }
-    await tf.ready(); // garantiza que webgl/cpu estén inicializados
+    await tf.setBackend('cpu');
+    await tf.ready();
   })();
   return backendPromise;
 }
 
-// Temperature scaling: corrige la sobreconfianza del modelo para que las
-// probabilidades mostradas reflejen la realidad. El valor lo calcula el
-// notebook (sección 8.3, "Calibración") y se imprime al final de esa celda.
-// T = 1.0 equivale a no calibrar.
-// T = 0.902 reduce el ECE de 0.031 a 0.025 sobre el conjunto de test.
-// Valor por defecto; se sobrescribe con model.json metadata si está disponible.
-let TEMPERATURE = 0.902;
-
-// Aplica temperature scaling a una probabilidad sigmoid.
-// No altera la clasificación (el umbral 0.5 es invariante), solo la confianza.
-export function calibrate(p) {
-  if (TEMPERATURE === 1.0) return p;
+export function calibrate(p, temperature) {
+  if (temperature == null || temperature === 1.0) return p;
   const eps = 1e-7;
   const clamped = Math.min(Math.max(p, eps), 1 - eps);
   const logit = Math.log(clamped / (1 - clamped));
-  return 1 / (1 + Math.exp(-logit / TEMPERATURE));
+  return 1 / (1 + Math.exp(-logit / temperature));
 }
 
 /**
- * Carga el modelo TF.js (singleton) con verificación de versión.
- * @param {(fraction: number) => void} [onProgress] callback 0..1 de descarga
- * @returns {Promise<import('@tensorflow/tfjs').LayersModel>}
+ * Carga un modelo específico por ID. Usa caché por modelo.
+ * @param {string} modelId
+ * @param {(fraction: number) => void} [onProgress]
+ * @returns {Promise<tf.LayersModel>}
  */
-export async function loadModel(onProgress) {
-  if (modelPromise) {
-    if (modelMetadata?.version !== MODEL_VERSION) {
-      console.warn(`Model version mismatch (cached: ${modelMetadata?.version}, expected: ${MODEL_VERSION}). Reloading...`);
-      modelPromise = null;
-      modelMetadata = null;
+export async function loadModel(modelId, onProgress) {
+  const id = modelId || activeModelId;
+  const entry = getModel(id);
+
+  const cached = modelCache.get(id);
+  if (cached) {
+    const meta = metaCache.get(id);
+    if (meta?.version !== entry.version) {
+      console.warn(`Version mismatch for ${id}, reloading...`);
+      modelCache.delete(id);
+      metaCache.delete(id);
     } else {
-      return modelPromise;
+      return cached;
     }
   }
 
-  modelPromise = ensureBackend().then(async () => {
-    const model = await tf.loadLayersModel(MODEL_URL, { onProgress });
-    
+  const url = `${BASE}${entry.path}`;
+  const promise = ensureBackend().then(async () => {
+    const model = await tf.loadLayersModel(url, { onProgress });
     if (model.userDefinedMetadata) {
-      modelMetadata = model.userDefinedMetadata;
-      if (modelMetadata.temperature) {
-        TEMPERATURE = modelMetadata.temperature;
-        console.log(`Loaded temperature scaling from model: T = ${TEMPERATURE}`);
-      }
-      if (modelMetadata.version) {
-        console.log(`Model version: ${modelMetadata.version}`);
-      }
+      metaCache.set(id, model.userDefinedMetadata);
     } else {
-      modelMetadata = { version: MODEL_VERSION, temperature: TEMPERATURE };
+      metaCache.set(id, { version: entry.version, temperature: entry.temperature });
     }
-    
     return model;
   }, (err) => {
-    modelPromise = null;
-    modelMetadata = null;
+    modelCache.delete(id);
+    metaCache.delete(id);
     throw err;
   });
-  
-  return modelPromise;
+
+  modelCache.set(id, promise);
+  return promise;
 }
 
+export function getActiveModelId() {
+  return activeModelId;
+}
 
+export function setActiveModelId(id) {
+  activeModelId = id;
+}
 
-// Backend de cómputo activo de TF.js ('webgl' = GPU, 'cpu' = fallback).
-// Útil como dato técnico en la UI.
+export function getModelMetadata(modelId) {
+  const id = modelId || activeModelId;
+  return metaCache.get(id) || getModel(id);
+}
+
 export function getBackend() {
   return tf.getBackend();
 }
 
 /**
- * Clasifica una imagen de lesión cutánea.
- *
- * COHERENCIA CON EL ENTRENAMIENTO: el preprocesado (resize 224×224 + ÷255)
- * debe coincidir EXACTAMENTE con el del notebook. Usamos Rescaling(1./255)
- * y NO vgg16.preprocess_input (que restaría la media de ImageNet por canal).
- * Si se cambia el preprocesado del notebook, este código debe actualizarse
- * o las predicciones serán silenciosamente incorrectas.
- *
- * Devuelve un objeto con el score crudo y el calibrado para que la UI pueda
- * mostrar ambos con la etiqueta correcta (útil para el logit).
- *
- * @param {HTMLImageElement} imgElement imagen ya decodificada (img.complete === true)
+ * Clasifica una imagen.
+ * @param {HTMLImageElement} imgElement
+ * @param {string} [modelId] - opcional, usa activo si no se pasa
  * @returns {Promise<{raw: number, calibrated: number}>}
  */
-export async function predictImage(imgElement) {
-  const model = await loadModel();
+export async function predictImage(imgElement, modelId) {
+  const id = modelId || activeModelId;
+  const model = await loadModel(id);
+  const meta = metaCache.get(id) || getModel(id);
+  const temperature = meta.temperature ?? null;
 
-  // fromPixelsAsync (TF.js 4+) reemplaza a fromPixels deprecated.
-  // Creamos el tensor manualmente y usamos try/finally para limpieza.
   const pixels = await tf.browser.fromPixelsAsync(imgElement);
   let input;
   let output;
@@ -139,7 +108,7 @@ export async function predictImage(imgElement) {
     output = model.predict(input);
     const raw = (await output.data())[0];
     const safe = Math.min(Math.max(raw, 1e-7), 1 - 1e-7);
-    return { raw: safe, calibrated: calibrate(safe) };
+    return { raw: safe, calibrated: calibrate(safe, temperature) };
   } finally {
     pixels.dispose();
     input?.dispose();

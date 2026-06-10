@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { loadModel, predictImage, getBackend } from './lib/model';
-import { GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, UMBRAL } from './lib/constants';
+import { loadModel, predictImage, getBackend, setActiveModelId } from './lib/model';
+import { MODELS, getModel, GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, UMBRAL } from './lib/constants';
 import { useCountUp } from './useCountUp';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
@@ -45,6 +45,7 @@ export default function App() {
   const [dragActive, setDragActive] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
   const [examples, setExamples] = useState([]);
+  const [modelId, setModelId] = useState(() => localStorage.getItem('modelId') || 'vgg16');
 
   const imgRef = useRef(null);
   const inputRef = useRef(null);
@@ -109,11 +110,13 @@ export default function App() {
     };
   }, [BASE]);
 
-  // Carga del modelo + metadatos técnicos. El flag `mounted` evita setState
-  // tras desmontar el componente (React 18 StrictMode lo monta dos veces en dev).
+  // Carga del modelo + metadatos técnicos. Se recarga si cambia modelId.
   useEffect(() => {
     let mounted = true;
-    loadModel((p) => mounted && setProgress(Math.round(p * 100)))
+    setModelStatus('loading');
+    setProgress(0);
+    setActiveModelId(modelId);
+    loadModel(modelId, (p) => mounted && setProgress(Math.round(p * 100)))
       .then(() => {
         if (!mounted) return;
         setBackend(getBackend());
@@ -126,7 +129,7 @@ export default function App() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [modelId]);
 
   // Libera el objectURL (solo si es blob: de una subida) al cambiar/desmontar
   useEffect(() => {
@@ -147,7 +150,7 @@ export default function App() {
     setPredictionError(null);
     try {
       const t0 = performance.now();
-      const { raw, calibrated } = await predictImage(imgRef.current);
+      const { raw, calibrated } = await predictImage(imgRef.current, modelId);
       const ms = Math.round(performance.now() - t0);
       // Si entretanto llegó otro análisis o el componente se desmontó, descartar.
       if (myToken !== runTokenRef.current || !mountedRef.current) return;
@@ -169,7 +172,7 @@ export default function App() {
     } finally {
       if (mountedRef.current && myToken === runTokenRef.current) setPredicting(false);
     }
-  }, [modelStatus, imagenLista]);
+  }, [modelStatus, imagenLista, modelId]);
   analizarRef.current = analizar;
 
   // Retry auto-analysis when model finishes loading
@@ -257,7 +260,7 @@ export default function App() {
         loadGradCAM(),
         loadModel(),
       ]);
-      const heatmap = await computeGradCAM(model, imgRef.current);
+      const heatmap = await computeGradCAM(model, imgRef.current, modelId);
       if (!mountedRef.current) return;
       paintHeatmap(camCanvasRef.current, heatmap);
     } catch (err) {
@@ -266,7 +269,7 @@ export default function App() {
     } finally {
       if (mountedRef.current) setCamBusy(false);
     }
-  }, []);
+  }, [modelId]);
 
   // Si el toggle se activa y ya hay un resultado pintado, generamos el
   // heatmap inmediatamente. Si se desactiva, limpiamos el canvas.
@@ -331,7 +334,7 @@ export default function App() {
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <nav className="toplinks" aria-label="Enlaces al código">
         <a
-          href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/melanoma_detection_v2.ipynb`}
+          href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/vgg16.ipynb`}
           target="_blank"
           rel="noreferrer"
         >
@@ -349,7 +352,7 @@ export default function App() {
       <header className="hero">
         <h1>Segunda opinión para lesiones de piel</h1>
         <p className="subtitle">
-          Modelo VGG16 fine-tuned · AUC 0.9606 · ~0.2 s por análisis.
+          Modelo {getModel(modelId).name} fine-tuned · AUC {getModel(modelId).auc ?? '—'} · ~0.2 s por análisis.
           Tus imágenes nunca salen de tu navegador.
         </p>
         <p className="hero-warn">
@@ -514,6 +517,47 @@ export default function App() {
           {predicting ? 'Analizando…' : 'Analizar imagen'}
         </button>
 
+        <fieldset className="model-selector">
+          <legend className="model-selector-title">Modelo de clasificación</legend>
+          <div className="model-selector-options">
+            {MODELS.map((m) => (
+              <label
+                key={m.id}
+                className={`model-card ${modelId === m.id ? 'is-active' : ''} ${m.auc == null ? 'is-pending' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="modelId"
+                  value={m.id}
+                  checked={modelId === m.id}
+                  disabled={predicting}
+                  onChange={() => {
+                    if (modelId !== m.id) {
+                      setModelId(m.id);
+                      localStorage.setItem('modelId', m.id);
+                      clearImage();
+                    }
+                  }}
+                />
+                <span className="model-card-name">{m.name}</span>
+                <span className="model-card-metrics">
+                  {m.auc != null
+                    ? `AUC ${m.auc} · ${m.sizeMB} MB`
+                    : 'Pendiente de entrenamiento'}
+                </span>
+                {m.auc != null && (
+                  <span className="model-card-detail">
+                    Sens {m.sens} · Esp {m.spec}
+                  </span>
+                )}
+                {modelId === m.id && modelStatus === 'loading' && (
+                  <span className="model-card-loading">cargando…</span>
+                )}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         {result && (
           <div className="cam-controls">
             <button
@@ -588,7 +632,7 @@ export default function App() {
 
       <Suspense fallback={null}>
         <ErrorBoundary>
-          <ResultsGallery />
+          <ResultsGallery modelId={modelId} />
         </ErrorBoundary>
       </Suspense>
       </main>
