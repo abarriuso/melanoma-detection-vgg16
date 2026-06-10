@@ -41,6 +41,7 @@ export function calibrate(p, temperature) {
 export async function loadModel(modelId, onProgress) {
   const id = modelId || activeModelId;
   const entry = getModel(id);
+  if (!entry) return Promise.reject(new Error(`Modelo "${id}" no encontrado en el registro`));
 
   const cached = modelCache.get(id);
   if (cached) {

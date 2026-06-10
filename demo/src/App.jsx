@@ -262,8 +262,7 @@ export default function App() {
       ]);
       const heatmap = await computeGradCAM(model, imgRef.current, modelId);
       if (!mountedRef.current) return;
-      const canvas = camCanvasRef.current;
-      paintHeatmap(canvas, heatmap, 224, 224);
+      paintHeatmap(camCanvasRef.current, heatmap, 224, 224);
     } catch (err) {
       console.error('Grad-CAM:', err);
       if (mountedRef.current) setShowCam(false);
@@ -501,6 +500,7 @@ export default function App() {
                     src={ex.path}
                     alt=""
                     loading="lazy"
+                    crossOrigin="anonymous"
                   />
                 </button>
               ))}

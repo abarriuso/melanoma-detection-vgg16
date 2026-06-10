@@ -30,21 +30,8 @@ function getSplitModels(model, modelId) {
 
   const targetLayer = findTargetLayer(model, modelId);
   const actModel = tf.model({ inputs: model.inputs, outputs: targetLayer.output });
+  const clsModel = tf.model({ inputs: targetLayer.output, outputs: model.output });
 
-  const tempInput = tf.input({ shape: targetLayer.outputShape.slice(1) });
-  let x = tempInput;
-  let found = false;
-  for (const layer of model.layers) {
-    if (!found) {
-      if (layer.name === targetLayer.name) { found = true; }
-      continue;
-    }
-    const config = layer.getConfig();
-    if (config.functional && config.functional === true) continue;
-    try { x = layer.apply(x); } catch (e) { break; }
-  }
-
-  const clsModel = tf.model({ inputs: tempInput, outputs: x });
   const result = { actModel, clsModel };
   splitCache.set(model, result);
   return result;

@@ -67,6 +67,7 @@ export function isLocalStorageAvailable() {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.decoding = 'async';
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`load ${src}`));
