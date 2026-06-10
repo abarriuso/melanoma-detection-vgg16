@@ -79,7 +79,7 @@ export default function App() {
         if (!mounted) return;
         // 3 ejemplos de cada clase: los primeros del manifest (curados)
         const pickN = (arr, real, n = 3) =>
-          arr.slice(0, n).map((name) => ({ real, path: `${base}samples/${real}/${name}` }));
+          arr.slice(0, n).map((name) => ({ real, path: `${BASE}samples/${real}/${name}` }));
         setExamples([...pickN(d.malignant, 'malignant'), ...pickN(d.benign, 'benign')]);
 
         // Resolución del parámetro ?sample=, con cola si el modelo no está listo.
@@ -262,7 +262,8 @@ export default function App() {
       ]);
       const heatmap = await computeGradCAM(model, imgRef.current, modelId);
       if (!mountedRef.current) return;
-      paintHeatmap(camCanvasRef.current, heatmap);
+      const canvas = camCanvasRef.current;
+      paintHeatmap(canvas, heatmap, 224, 224);
     } catch (err) {
       console.error('Grad-CAM:', err);
       if (mountedRef.current) setShowCam(false);

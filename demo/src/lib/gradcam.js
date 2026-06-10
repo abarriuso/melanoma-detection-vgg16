@@ -8,8 +8,12 @@ const gradCache = new WeakMap();
 function findTargetLayer(model, modelId) {
   if (modelId) {
     const entry = getModel(modelId);
-    const named = model.getLayer(entry.targetLayer);
-    if (named) return named;
+    if (entry?.targetLayer) {
+      try {
+        const named = model.getLayer(entry.targetLayer);
+        if (named) return named;
+      } catch {}
+    }
   }
   for (const name of TARGET_LAYER_CANDIDATES) {
     const layer = model.getLayer(name);
