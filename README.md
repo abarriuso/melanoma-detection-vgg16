@@ -256,13 +256,31 @@ Despliegue automático e idempotente. Cada push a main reconstruye y publica.
 
 | | Fase 1 — Feature Extraction | Fase 2 — Fine-tuning |
 |---|---|---|
-| VGG16 | Congelado | Bloque 5 descongelado |
+| Backbone | Congelado | Capas altas descongeladas |
 | Optimizer | RMSprop | Adam |
-| Learning rate | 1e-4 | 1e-5 |
-| Épocas (máx.) | 20 | 30 |
+| Learning rate | 1e-4 | 1e-5 / 1e-6 |
+| Épocas (máx.) | 20 | 30-40 |
 
 Callbacks: `ModelCheckpoint` (mejor `val_loss`), `EarlyStopping`
-(paciencia 7-10), `ReduceLROnPlateau` (×0.5 al estancarse).
+(paciencia 7-12), `ReduceLROnPlateau` (×0.5 al estancarse).
+
+### Comparativa multi-modelo
+
+El proyecto entrena tres backbones con el mismo protocolo, cada uno en un
+notebook independiente bajo [`notebooks/`](notebooks/) (listos para Google
+Colab con GPU T4):
+
+| Modelo | Descongelado en Fase 2 | LR Fase 2 | Grad-CAM target |
+|--------|------------------------|:---------:|-----------------|
+| VGG16 | Bloque 5 (últimas 4 capas) | 1e-5 | `block5_conv3` |
+| ResNet50V2 | ~50 % capas no-BN, BatchNorm congelado | 1e-6 | `post_relu` |
+| EfficientNetV2S | ~50 % capas, BatchNorm congelado | 1e-5 | `top_conv` |
+
+Cada modelo recibe la imagen en `[0, 1]` (igual que la demo) y **hornea el
+preprocesado específico de su backbone dentro del grafo**, de modo que el
+modelo exportado a TF.js es autocontenido y el cliente no necesita lógica por
+modelo. En ResNet/EfficientNet se congela BatchNorm en el fine-tuning para no
+corromper sus estadísticas con batches pequeños.
 
 ---
 
@@ -282,8 +300,9 @@ sección dedicada a evaluar el modelo como lo haría un sistema clínico:
 | Análisis cualitativo de errores | Grad-CAM sobre los falsos negativos para identificar qué características engañan al modelo. |
 
 La calibración del notebook se conecta con la demo web: el valor de temperatura
-`T` se traslada a [`demo/src/lib/model.js`](demo/src/lib/model.js) para que la
-confianza mostrada al usuario sea honesta.
+`T` se traslada a [`demo/src/lib/constants.js`](demo/src/lib/constants.js) (y se
+aplica en [`model.js`](demo/src/lib/model.js)) para que la confianza mostrada al
+usuario sea honesta.
 
 ## Interpretabilidad: Grad-CAM y Grad-CAM++
 
@@ -303,7 +322,11 @@ Imagen original  ->  Activaciones block5_conv3  ->  Gradientes  ->  Heatmap supe
 
 ```
 .
-├── melanoma_detection_v2.ipynb     Notebook principal
+├── notebooks/                      Notebooks de entrenamiento (uno por backbone)
+│   ├── vgg16.ipynb                 VGG16 — listo para Colab T4
+│   ├── resnet50v2.ipynb            ResNet50V2
+│   └── efficientnetv2s.ipynb       EfficientNetV2S
+├── melanoma_detection_v2.ipynb     Notebook combinado original (referencia)
 ├── demo/                           Demo web (React + TensorFlow.js)
 │   ├── src/
 │   │   ├── main.jsx                Punto de entrada de React
@@ -328,6 +351,7 @@ Imagen original  ->  Activaciones block5_conv3  ->  Gradientes  ->  Heatmap supe
 │   └── package.json
 ├── scripts/
 │   ├── download_dataset.ps1        Descarga del dataset de Kaggle
+│   ├── gen-notebooks.mjs           Genera los notebooks de notebooks/
 │   ├── convert-to-tfjs.mjs         Conversión Keras → TF.js (con temperature)
 │   └── gen-og.mjs                  Regenera demo/public/og.png
 ├── .github/workflows/
@@ -355,9 +379,19 @@ Archivos excluidos del repositorio (`.gitignore`):
 
 1. Sube el dataset `melanoma_cancer_dataset/` a la raíz de tu Google Drive.
    Estructura: `MyDrive/melanoma_cancer_dataset/{train,test}/{benign,malignant}/*.jpg`.
-2. Abre `melanoma_detection_v2.ipynb` en [Google Colab](https://colab.research.google.com/).
+2. Abre el notebook del backbone que quieras entrenar desde
+   [`notebooks/`](notebooks/) (p. ej. `vgg16.ipynb`) en
+   [Google Colab](https://colab.research.google.com/).
 3. Activa la GPU: Entorno de ejecución > Cambiar tipo de entorno > T4 GPU.
-4. Ejecuta todas las celdas.
+4. Ejecuta todas las celdas. Si Colab pide reiniciar el entorno tras la primera
+   celda (instalación de `tf-keras`), hazlo y reejecuta desde ahí.
+
+Cada notebook entrena, evalúa (con métricas clínicas, calibración, Grad-CAM,
+PR, TTA) y **exporta el modelo a TF.js cuantizado automáticamente** en
+`MyDrive/melanoma_model/<id>/tfjs/`.
+
+> Los notebooks se generan con `node scripts/gen-notebooks.mjs` (fuente de
+> verdad); no edites los `.ipynb` a mano.
 
 **Opción 2 — Local**
 
@@ -366,29 +400,25 @@ git clone https://github.com/abarriuso/melanoma-detection-vgg16.git
 cd melanoma-detection-vgg16
 pip install -r requirements.txt
 pwsh ./scripts/download_dataset.ps1
-jupyter notebook melanoma_detection_v2.ipynb
+jupyter notebook notebooks/vgg16.ipynb
 ```
 
 Tamaños orientativos del modelo:
 184 MB (con optimizador) → ~84 MB (solo inferencia) → ~15 MB (TF.js + uint8).
 
-### B. Convertir Keras a TF.js
+### B. Desplegar el modelo en la demo
 
-Necesario para que la demo web funcione. Ejecutar en Google Colab tras entrenar:
+La conversión a TF.js ya la hace el notebook. Solo hay que descargar de Drive la
+carpeta `melanoma_model/<id>/tfjs/` y copiar su contenido a la demo:
 
-```python
-import tensorflowjs as tfjs
-from tensorflow.keras.models import load_model
-
-modelo = load_model('/content/drive/MyDrive/melanoma_model/melanoma_v2_final.keras')
-tfjs.converters.save_keras_model(
-    modelo, '/content/tfjs_model',
-    quantization_dtype_map={'uint8': '*'}
-)
+```bash
+cp -r <descarga>/vgg16/tfjs/*  demo/public/model/vgg16/
 ```
 
-Después: descargar `tfjs_model/` y copiar su contenido (`model.json` + `*.bin`)
-a `demo/public/model/`.
+Después, actualiza `temperature` (la imprime la celda de calibración) y las
+métricas del modelo en `demo/src/lib/constants.js`. El script
+`scripts/convert-to-tfjs.mjs` queda disponible como alternativa para convertir
+un `.keras` localmente con Node.
 
 ### C. Demo web en local
 
@@ -483,8 +513,9 @@ valoración por un dermatólogo certificado. Texto completo en
   recalibrar el umbral de decisión a la prevalencia real (prevalence-aware
   thresholding) en lugar de fijarlo en 0.5.
 - Backbones más eficientes que VGG16: EfficientNetV2 o MobileNetV3 deberían
-  igualar o mejorar el AUC con una fracción de los parámetros (el notebook ya
-  incluye una comparativa con ResNet50V2).
+  igualar o mejorar el AUC con una fracción de los parámetros. El repo ya
+  incluye notebooks de ResNet50V2 y EfficientNetV2S ([`notebooks/`](notebooks/)),
+  pendientes de entrenar y publicar sus métricas.
 - Exponer en la demo la señal de incertidumbre (MC Dropout) y un canal de
   derivación visual para las predicciones de baja confianza.
 - Validación externa con datasets más diversos y multicéntricos (ISIC,

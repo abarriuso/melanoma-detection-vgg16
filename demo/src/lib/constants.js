@@ -28,7 +28,7 @@ export const MODELS = [
     label: 'ResNet50V2',
     path: 'model/resnet50v2/model.json',
     temperature: null,
-    targetLayer: 'conv5_block3_conv',
+    targetLayer: 'post_relu',
     version: '1.0.0',
     sizeMB: 30,
     auc: null,
