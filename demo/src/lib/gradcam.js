@@ -75,7 +75,9 @@ export async function computeGradCAM(model, imgElement, modelId) {
       const norm = relued.max();
       return norm > 0 ? relued.div(norm) : relued;
     });
-    const result = await cam.resizeBilinear([224, 224]).data();
+    const resized = cam.resizeBilinear([224, 224]);
+    const result = await resized.data();
+    resized.dispose();
     return Array.from(result);
   } finally {
     pixels.dispose();

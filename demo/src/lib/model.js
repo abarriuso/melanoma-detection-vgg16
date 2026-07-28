@@ -45,6 +45,8 @@ export async function loadModel(modelId, onProgress) {
 
   const cached = modelCache.get(id);
   if (cached) {
+    /* Si ya está cargando (Promise pendiente), reusarla */
+    if (cached instanceof Promise) return cached;
     const meta = metaCache.get(id);
     if (meta?.version !== entry.version) {
       console.warn(`Version mismatch for ${id}, reloading...`);
