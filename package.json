@@ -1,0 +1,18 @@
+{
+  "name": "melanoma-detection-vgg16",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Clasificación binaria de imágenes dermatoscópicas con VGG16 + Grad-CAM. Inferencia 100% client-side con TensorFlow.js.",
+  "scripts": {
+    "dev": "cd demo && npm run dev",
+    "build": "cd demo && npm run build",
+    "install": "cd demo && npm install",
+    "lint": "cd demo && npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abarriuso/melanoma-detection-vgg16.git"
+  },
+  "license": "MIT",
+  "author": "Adrián Barriuso Pizarro"
+}
