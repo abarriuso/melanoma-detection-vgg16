@@ -217,7 +217,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     DEV[git push main] --> GHA[GitHub Actions]
-    GHA --> INSTALL[npm ci + cache]
+    GHA --> INSTALL[pnpm install + cache]
     INSTALL --> BUILD[vite build]
     BUILD --> ART[upload-pages-artifact]
     ART --> DEPLOY[deploy-pages]
@@ -424,10 +424,10 @@ un `.keras` localmente con Node.
 
 ```bash
 cd demo
-npm install
-npm run dev         # http://localhost:5173
-npm run build       # producción
-npm run lint        # ESLint
+pnpm install
+pnpm dev         # http://localhost:5173
+pnpm build       # producción
+pnpm lint        # ESLint
 ```
 
 Requiere el modelo convertido en `demo/public/model/`.
@@ -466,7 +466,7 @@ servidor).
 
 | # | Riesgo | Probabilidad | Impacto | Nivel | Mitigación |
 |---|--------|:---:|:---:|:---:|------------|
-| 1 | Compromiso de dependencia npm | Baja | Medio | Medio | Lockfile, Dependabot, npm audit |
+| 1 | Compromiso de una dependencia | Baja | Medio | Medio | Lockfile, Dependabot, pnpm audit |
 | 2 | Commit accidental de secreto | Media | Alto | Medio | .gitignore, gitleaks |
 | 3 | Ejemplo adversarial | Media | Bajo | Bajo | Disclaimer clínico |
 | 4 | MITM | Muy baja | Medio | Bajo | HTTPS + HSTS |
@@ -482,7 +482,7 @@ servidor).
 
 ### Hardening pendiente
 
-- Dependabot + `npm audit` continuos.
+- Dependabot + `pnpm audit` continuos.
 - Escaneo de secretos (gitleaks como pre-commit hook).
 
 ---

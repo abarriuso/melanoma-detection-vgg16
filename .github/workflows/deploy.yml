@@ -32,25 +32,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: demo/package-lock.json
+          cache: pnpm
+          cache-dependency-path: demo/pnpm-lock.yaml
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      # npm ci (clean install): instala exactamente lo que dice package-lock.json,
-      # sin modificarlo. Más rápido y reproducible que npm install en CI.
+      # pnpm install --frozen-lockfile: instala exactamente lo que dice
+      # pnpm-lock.yaml, sin modificarlo. Reproducible para CI.
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       # Vite genera el build de producción en demo/dist/.
       # La variable `base` en vite.config.js se encarga de prefijar las rutas
       # con /melanoma-detection-vgg16/ para que funcionen en GitHub Pages.
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

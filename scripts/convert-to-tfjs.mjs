@@ -9,7 +9,7 @@
  *   node scripts/convert-to-tfjs.mjs melanoma_v2_finetuning.keras demo/public/model/vgg16 --temperature=0.902 --version=1.0.0 --model-id=vgg16
  * 
  * Requirements:
- *   - TensorFlow.js Node: npm install @tensorflow/tfjs-node @tensorflow/tfjs-converter
+ *   - TensorFlow.js Node: pnpm add @tensorflow/tfjs-node @tensorflow/tfjs-converter
  *   - Or run in Google Colab (see README)
  */
 

@@ -2,7 +2,7 @@
 // Script de uso ocasional: regenerar si cambia el branding, el copy o las
 // métricas. `sharp` es una dependencia transitoria (no se versiona):
 //
-//   npm install --no-save sharp    # en la RAÍZ del repo
+//   pnpm add -D sharp    # en la RAÍZ del repo
 //   node scripts/gen-og.mjs
 //
 // Output: demo/public/og.png (1200×630, ~32 KB).

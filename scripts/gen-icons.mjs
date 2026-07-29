@@ -1,7 +1,7 @@
 // Genera los iconos PWA (192/512 y maskable 512) a partir de
 // demo/public/favicon.svg. Sharp es transitoria (no se versiona):
 //
-//   npm install --no-save sharp    # en la RAÍZ del repo
+//   pnpm add -D sharp    # en la RAÍZ del repo
 //   node scripts/gen-icons.mjs
 import sharp from 'sharp';
 import { readFileSync, mkdirSync } from 'node:fs';

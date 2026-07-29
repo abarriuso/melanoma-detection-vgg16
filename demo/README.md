@@ -8,10 +8,10 @@ Referencia rápida para desarrollo local. La documentación completa del proyect
 
 ```bash
 cd demo
-npm install
-npm run dev      # http://localhost:5173
-npm run build    # producción → demo/dist/
-npm run lint     # ESLint
+pnpm install
+pnpm dev      # http://localhost:5173
+pnpm build    # producción → demo/dist/
+pnpm lint     # ESLint
 ```
 
 El modelo convertido debe estar en `public/model/` — ver instrucciones de

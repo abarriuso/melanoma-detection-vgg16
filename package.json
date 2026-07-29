@@ -4,10 +4,10 @@
   "private": true,
   "description": "Clasificación binaria de imágenes dermatoscópicas con VGG16 + Grad-CAM. Inferencia 100% client-side con TensorFlow.js.",
   "scripts": {
-    "dev": "cd demo && npm run dev",
-    "build": "cd demo && npm run build",
-    "install": "cd demo && npm install",
-    "lint": "cd demo && npm run lint"
+    "dev": "cd demo && pnpm dev",
+    "build": "cd demo && pnpm build",
+    "install": "cd demo && pnpm install",
+    "lint": "cd demo && pnpm lint"
   },
   "repository": {
     "type": "git",
