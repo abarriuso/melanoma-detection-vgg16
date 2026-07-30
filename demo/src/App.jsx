@@ -109,6 +109,13 @@ export default function App() {
   const runTokenRef = useRef(0);
   const [showCam, setShowCam] = useState(false);
   const [camBusy, setCamBusy] = useState(false);
+  // Rect (en px, relativo al contenedor) donde la foto se ve de verdad
+  // dentro de la caja de tamaño fijo del dropzone. La caja mide siempre lo
+  // mismo (evita el salto de layout al cargar una imagen), pero la foto se
+  // ajusta dentro con object-fit:contain y puede dejar bandas vacías a los
+  // lados si no es cuadrada. Sin esto, el overlay de Grad-CAM se estira
+  // sobre la caja entera en vez de sobre la foto, y no coincide con ella.
+  const [camRect, setCamRect] = useState(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
   const pendingAutoRef = useRef(false);
@@ -281,6 +288,7 @@ export default function App() {
       setResult(null);
       setImageError(false);
       setShowCam(false);
+      setCamRect(null); // se recalcula en onImgLoad; evita usar el de la foto anterior
       // El blob: anterior lo revoca el cleanup del useEffect que escucha imageURL.
       setImageURL((prev) => {
         // Si elegimos el MISMO ejemplo otra vez, la URL no cambia y onLoad no
@@ -342,6 +350,7 @@ export default function App() {
     setResult(null);
     setPredicting(false);
     setShowCam(false);
+    setCamRect(null);
   };
 
   // Calcula y pinta el Grad-CAM sobre el canvas overlay. La promesa
@@ -399,8 +408,35 @@ export default function App() {
     e.target.value = '';
   };
 
+  // Calcula dónde se ve la foto de verdad dentro de la caja de tamaño fijo
+  // del dropzone (misma cuenta que hace CSS object-fit:contain, pero en JS
+  // porque el overlay de Grad-CAM necesita esas coordenadas para dibujar
+  // encima del sitio correcto, no de la caja entera).
+  const updateCamRect = useCallback(() => {
+    const img = imgRef.current;
+    if (!img || !img.naturalWidth || !img.naturalHeight) return;
+    const cw = img.clientWidth;
+    const ch = img.clientHeight;
+    if (!cw || !ch) return;
+    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    setCamRect({ left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h });
+  }, []);
+
+  // Recalcula si cambia el ancho del contenedor (viewport responsive): la
+  // altura del dropzone es fija por CSS, pero el ancho no.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img || !imageURL) return;
+    const ro = new ResizeObserver(updateCamRect);
+    ro.observe(img);
+    return () => ro.disconnect();
+  }, [imageURL, updateCamRect]);
+
   // Cuando la imagen termina de decodificar y venía de un ejemplo, analiza sola
   const onImgLoad = () => {
+    updateCamRect();
     if (autoRun) {
       setAutoRun(false);
       if (modelStatus === 'ready') {
@@ -573,6 +609,12 @@ export default function App() {
                 ref={camCanvasRef}
                 className={`preview-cam ${showCam ? 'is-on' : ''}`}
                 aria-hidden="true"
+                style={camRect ? {
+                  left: `${camRect.left}px`,
+                  top: `${camRect.top}px`,
+                  width: `${camRect.width}px`,
+                  height: `${camRect.height}px`,
+                } : undefined}
               />
               <button
                 type="button"
