@@ -292,7 +292,9 @@ export default function App() {
         return;
       }
       setFileError(null);
-      setImage(URL.createObjectURL(file));
+      // auto:true: el análisis arranca solo al terminar de cargar la
+      // imagen, igual que al elegir un ejemplo. No hace falta un botón.
+      setImage(URL.createObjectURL(file), { auto: true });
     };
     img.onerror = () => {
       URL.revokeObjectURL(objectURL);
@@ -607,18 +609,23 @@ export default function App() {
           </div>
         )}
 
-        {/* Spacer: en móvil el botón real se fija abajo (.analyze-btn.is-pinned);
-            este hueco evita que el contenido salte al aparecer/desaparecer. */}
-        {imageURL && !imageError && <div className="analyze-btn-spacer" aria-hidden="true" />}
-        <button
-          type="button"
-          className={`analyze-btn ${imageURL && !imageError ? 'is-pinned' : ''}`}
-          onClick={analizar}
-          disabled={!imageURL || imageError || modelStatus !== 'ready' || predicting}
-          title="El análisis se ejecuta en tu navegador. La imagen no sale de tu dispositivo."
-        >
-          {predicting ? 'Analizando…' : 'Analizar imagen'}
-        </button>
+        {/* El análisis arranca solo al cargar la imagen (subida o ejemplo).
+            Aquí solo queda el estado mientras corre y, si ya hay resultado
+            o algo falló, un botón para repetirlo. */}
+        {predicting && (
+          <p className="analyzing-status" role="status" aria-live="polite">
+            Analizando…
+          </p>
+        )}
+        {!predicting && imageURL && !imageError && modelStatus === 'ready' && (result || predictionError) && (
+          <button
+            type="button"
+            className="reanalyze-btn"
+            onClick={analizar}
+          >
+            {predictionError ? 'Reintentar análisis' : 'Analizar de nuevo'}
+          </button>
+        )}
 
         <fieldset className="model-selector">
           <legend className="model-selector-title">Modelo de clasificación</legend>
@@ -667,14 +674,19 @@ export default function App() {
           <motion.div className="cam-controls" {...fadeIn}>
             <button
               type="button"
-              className={`cam-btn ${showCam ? 'is-on' : ''}`}
+              role="switch"
+              aria-checked={showCam}
+              className={`cam-toggle ${showCam ? 'is-on' : ''}`}
               onClick={() => setShowCam((v) => !v)}
               disabled={camBusy}
               title="Visualiza qué regiones de la lesión influyeron más en la decisión del modelo (Grad-CAM). No indica dónde está el cáncer; el modelo puede equivocarse."
             >
-              {camBusy
-                ? 'Calculando relevancia…'
-                : showCam ? 'Ocultar mapa de relevancia' : 'Mapa de relevancia (Grad-CAM)'}
+              <span className="cam-toggle-track" aria-hidden="true">
+                <span className="cam-toggle-thumb" />
+              </span>
+              <span className="cam-toggle-label">
+                {camBusy ? 'Calculando relevancia…' : 'Mapa de relevancia (Grad-CAM)'}
+              </span>
             </button>
           </motion.div>
         )}

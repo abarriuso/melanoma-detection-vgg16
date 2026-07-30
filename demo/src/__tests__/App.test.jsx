@@ -25,12 +25,30 @@ describe('App', () => {
     expect(heading.textContent.toLowerCase()).toMatch(/melanoma|detección|lesiones|skin/i);
   });
 
-  it('renderiza el botón de análisis', async () => {
+  it('renderiza el selector de imagen', async () => {
     const App = (await import('../App.jsx')).default;
     render(<App />);
-    // Debe haber un botón o input para analizar/subir imagen
+    // Debe haber un botón o input para subir imagen
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
+  });
+
+  it('no hay botón manual de "Analizar imagen": el análisis es automático', async () => {
+    const App = (await import('../App.jsx')).default;
+    render(<App />);
+    expect(screen.queryByRole('button', { name: /^analizar imagen$/i })).not.toBeInTheDocument();
+  });
+
+  it('sube un archivo válido sin necesitar ningún clic adicional', async () => {
+    const App = (await import('../App.jsx')).default;
+    const { container } = render(<App />);
+    const input = container.querySelector('input[type="file"]');
+    const file = new File([new Uint8Array(100)], 'lesion.jpg', { type: 'image/jpeg' });
+    fireEvent.change(input, { target: { files: [file] } });
+    // Se decodifica de forma async (new Image()); solo comprobamos que no
+    // aparece ningún error de tipo/tamaño, es decir, el archivo se acepta.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(/formato no soportado|demasiado/i)).not.toBeInTheDocument();
   });
 
   it('incluye la etiqueta de inferencia local', async () => {
