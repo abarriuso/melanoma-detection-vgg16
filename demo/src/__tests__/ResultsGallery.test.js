@@ -72,6 +72,35 @@ describe('loadScoresCache', () => {
     localStorage.getItem.mockReturnValue('{invalid json');
     expect(loadScoresCache()).toEqual({});
   });
+
+  it('descarta un array (no es un mapa de scores)', () => {
+    localStorage.getItem.mockReturnValue('[0.1, 0.2]');
+    expect(loadScoresCache()).toEqual({});
+  });
+
+  it('descarta scores fuera de [0,1]', () => {
+    localStorage.getItem.mockReturnValue('{"a.jpg": -0.5, "b.jpg": 1.5, "ok.jpg": 0.5}');
+    expect(loadScoresCache()).toEqual({ 'ok.jpg': 0.5 });
+  });
+
+  it('descarta scores que no son números', () => {
+    localStorage.getItem.mockReturnValue('{"a.jpg": "0.9", "b.jpg": null, "c.jpg": {}, "ok.jpg": 0.7}');
+    expect(loadScoresCache()).toEqual({ 'ok.jpg': 0.7 });
+  });
+
+  it('descarta NaN e Infinity', () => {
+    // NaN/Infinity no son JSON válidos, llegan como null o como strings
+    localStorage.getItem.mockReturnValue('{"a.jpg": null, "ok.jpg": 1}');
+    expect(loadScoresCache()).toEqual({ 'ok.jpg': 1 });
+  });
+
+  it('no hereda propiedades de Object.prototype', () => {
+    localStorage.getItem.mockReturnValue('{"ok.jpg": 0.5}');
+    const cache = loadScoresCache();
+    // Con un objeto normal, cache['toString'] devolvería la función heredada
+    // y el chequeo `!= null` de allScored daría un falso positivo.
+    expect(cache['toString']).toBeUndefined();
+  });
 });
 
 describe('saveScoresCache', () => {

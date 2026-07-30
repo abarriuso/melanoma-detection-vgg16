@@ -14,13 +14,21 @@ function cspPlugin() {
   return {
     name: 'csp-plugin',
     transformIndexHtml(html, { server }) {
-      // eslint-disable-next-line no-undef
-      const isDev = server ? true : process.env.NODE_ENV !== 'production';
+      // La presencia de `server` ya identifica el modo dev. No se consulta
+      // NODE_ENV: un `NODE_ENV=development pnpm build` publicaría
+      // 'unsafe-eval' en producción sin que nada avisara.
+      const isDev = !!server;
       const scriptSrc = isDev ? "script-src 'self' 'unsafe-eval';" : "script-src 'self';";
+      // style-src-elem bloquea <style> inyectados; se mantiene style-src con
+      // 'unsafe-inline' como fallback porque React escribe atributos style=
+      // (barras de progreso) y Firefox no soporta style-src-elem.
       // Nota: frame-ancestors solo funciona vía HTTP headers, no en meta tags.
-      // GitHub Pages no permite custom headers, así que usamos frame-buster JS.
-      const csp = `default-src 'self'; ${scriptSrc} style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; object-src 'none'; child-src 'none'; media-src 'none'; upgrade-insecure-requests;`;
-      return html.replace('</head>', `  <meta http-equiv="Content-Security-Policy" content="${csp}">\n</head>`);
+      // GitHub Pages no permite custom headers, así que usamos public/frame-guard.js.
+      const csp = `default-src 'self'; ${scriptSrc} style-src 'self' 'unsafe-inline'; style-src-elem 'self'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; base-uri 'none'; form-action 'self'; object-src 'none'; child-src 'none'; media-src 'none'; upgrade-insecure-requests;`;
+      // Se inyecta justo tras <head> y no antes de </head>: una CSP en meta
+      // solo aplica a lo que el parser lee DESPUÉS de encontrarla, así que
+      // al final del head dejaba sin cubrir los propios <script> de Vite.
+      return html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}">`);
     },
   };
 }

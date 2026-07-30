@@ -26,14 +26,28 @@ export function shuffle(arr) {
   return a;
 }
 
-// Lee el cache de scores de localStorage. Tolerante: si el JSON está
-// corrupto o la versión no coincide, devolvemos {} sin reventar.
+// Lee el cache de scores de localStorage. Tolerante: si el JSON está corrupto
+// devolvemos {} sin reventar (la clave incluye la versión y el modelo, así que
+// un cache de otra versión simplemente no se encuentra).
+//
+// Se descarta toda entrada que no sea un score válido en [0, 1]. No es
+// paranoia: en github.io todos los proyectos de una cuenta comparten origen y
+// por tanto comparten localStorage, así que cualquier otra página del usuario
+// puede escribir en esta clave. Sin validar, unos valores manipulados harían
+// que la galería mostrara una exactitud inventada.
 export function loadScoresCache(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return (parsed && typeof parsed === 'object' ? parsed : {});
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const clean = Object.create(null);
+    for (const [file, score] of Object.entries(parsed)) {
+      if (typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1) {
+        clean[file] = score;
+      }
+    }
+    return clean;
   } catch {
     return {};
   }

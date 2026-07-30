@@ -30,10 +30,12 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 // pero menos navegadores lo decodifican uniformemente; jpeg/png cubren el 99%.
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 // Tope de seguridad para la inferencia. En GPUs débiles o con el driver en
-// mal estado, la primera compilación de shaders WebGL puede tardar mucho;
-// pasado este tiempo asumimos que algo se ha atascado y lo comunicamos en
-// vez de dejar el botón en "Analizando…" para siempre.
-const PREDICT_TIMEOUT_MS = 30_000;
+// mal estado, la primera compilación de shaders WebGL puede tardar mucho
+// (medido: más de un minuto en una GT 710); pasado este tiempo asumimos que
+// algo se ha atascado y lo comunicamos en vez de dejar el botón en
+// "Analizando…" para siempre. Tras esa primera vez, la inferencia baja a
+// segundos, así que reintentar suele funcionar.
+const PREDICT_TIMEOUT_MS = 60_000;
 
 function withTimeout(promise, ms, message) {
   return Promise.race([
@@ -287,17 +289,27 @@ export default function App() {
   const renderGradCAM = useCallback(async () => {
     if (!imgRef.current || !camCanvasRef.current) return;
     setCamBusy(true);
+    setPredictionError(null);
     try {
       const [{ computeGradCAM, paintHeatmap }, model] = await Promise.all([
         loadGradCAM(),
         loadModel(),
       ]);
-      const heatmap = await computeGradCAM(model, imgRef.current, modelId);
+      const heatmap = await withTimeout(
+        computeGradCAM(model, imgRef.current, modelId),
+        PREDICT_TIMEOUT_MS,
+        'timeout',
+      );
       if (!mountedRef.current) return;
       paintHeatmap(camCanvasRef.current, heatmap, 224, 224);
     } catch (err) {
       console.error('Grad-CAM:', err);
-      if (mountedRef.current) setShowCam(false);
+      if (mountedRef.current) {
+        setShowCam(false);
+        // Antes el toggle se apagaba sin más y parecía que el botón no
+        // hacía nada; mejor decir qué ha pasado.
+        setPredictionError('No se pudo generar el mapa de relevancia. Inténtalo de nuevo.');
+      }
     } finally {
       if (mountedRef.current) setCamBusy(false);
     }
@@ -405,7 +417,15 @@ export default function App() {
         <div className={`model-status status-${modelStatus}`} role="status" aria-live="polite">
           {modelStatus === 'loading' && (
             <>
-              <span>Cargando pesos del modelo · {progress}%</span>
+              {/* Con los pesos ya descargados queda el warmup: la primera
+                  inferencia compila los shaders WebGL, y en GPUs modestas
+                  eso puede llevar más de un minuto. Sin este mensaje, la
+                  barra se queda clavada en 100% y parece que la app murió. */}
+              <span>
+                {progress >= 100
+                  ? 'Preparando el modelo… La primera vez puede tardar un poco, sobre todo en equipos modestos.'
+                  : `Cargando pesos del modelo · ${progress}%`}
+              </span>
               <span
                 className="status-progress"
                 style={{ width: `${progress}%` }}
@@ -450,11 +470,13 @@ export default function App() {
           onDragLeave={() => setDragActive(false)}
           onDrop={onDrop}
         >
+          {/* Sin `capture`: ese atributo abre la cámara directamente en móvil,
+              que es justo lo que el aviso de arriba pide no hacer (el modelo
+              se entrenó con dermatoscopia, no con fotos de teléfono). */}
           <input
             ref={inputRef}
             type="file"
             accept={ACCEPTED_TYPES.join(',')}
-            capture="environment"
             hidden
             onChange={onPickFile}
           />

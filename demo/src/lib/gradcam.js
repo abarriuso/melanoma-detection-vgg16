@@ -32,7 +32,20 @@ function getSplitModels(model, modelId) {
 
   const targetLayer = findTargetLayer(model, modelId);
   const actModel = tf.model({ inputs: model.inputs, outputs: targetLayer.output });
-  const clsModel = tf.model({ inputs: targetLayer.output, outputs: model.output });
+
+  // tf.model() exige que `inputs` sea un InputLayer: no se puede cortar el
+  // grafo por un tensor intermedio (lanza "Input layers to a LayersModel
+  // must be InputLayer objects"). El clasificador se reconstruye aplicando
+  // las capas posteriores a la capa objetivo sobre una entrada nueva con la
+  // forma de sus activaciones. Vale porque la cabeza tras block5_conv3 es
+  // una cadena lineal (pool → GAP → Dense → Dropout → Dense).
+  const idx = model.layers.indexOf(targetLayer);
+  const clsInput = tf.input({ shape: targetLayer.outputShape.slice(1) });
+  let y = clsInput;
+  for (let i = idx + 1; i < model.layers.length; i++) {
+    y = model.layers[i].apply(y);
+  }
+  const clsModel = tf.model({ inputs: clsInput, outputs: y });
 
   const result = { actModel, clsModel };
   splitCache.set(model, result);
@@ -41,10 +54,9 @@ function getSplitModels(model, modelId) {
 
 function getGradFn(clsModel) {
   if (gradCache.has(clsModel)) return gradCache.get(clsModel);
-  const fn = tf.grad((activations) => {
-    const pred = clsModel.predict(activations);
-    return pred.squeeze();
-  });
+  // apply() en vez de predict(): predict corre fuera de la cinta de
+  // gradientes y tf.grad no podría derivar a través de él.
+  const fn = tf.grad((activations) => clsModel.apply(activations).squeeze());
   gradCache.set(clsModel, fn);
   return fn;
 }
@@ -67,17 +79,25 @@ export async function computeGradCAM(model, imgElement, modelId) {
         .div(255)
         .expandDims(0)
     );
-    activations = actModel.predict(input);
-    grads = gradFn(activations);
-    pooledGrads = grads.mean([0, 1], true);
+    activations = actModel.predict(input);          // [1, h, w, c]
+    grads = gradFn(activations);                    // [1, h, w, c]
+    // Peso de cada canal: promedio de su gradiente sobre el plano espacial
+    // (ejes 1 y 2 = alto y ancho). Promediar [0, 1] (batch y alto) produce
+    // un peso distinto por columna, que el broadcasting acepta en silencio
+    // pero no es Grad-CAM.
+    pooledGrads = grads.mean([1, 2], true);         // [1, 1, 1, c]
     cam = tf.tidy(() => {
       const weighted = activations.mul(pooledGrads);
-      const summed = weighted.sum(-1).squeeze();
+      const summed = weighted.sum(-1).squeeze([0]); // [h, w]
       const relued = summed.maximum(0);
-      const norm = relued.max();
-      return norm > 0 ? relued.div(norm) : relued;
+      // max() devuelve un tensor escalar, no un número: compararlo con
+      // `> 0` en JS es siempre false. maximum(eps) evita dividir por cero
+      // sin salir del grafo.
+      const norm = relued.max().maximum(1e-8);
+      // resizeBilinear exige rango 3 o 4; con [h, w] a secas lanza.
+      return relued.div(norm).expandDims(-1);       // [h, w, 1]
     });
-    const resized = cam.resizeBilinear([224, 224]);
+    const resized = cam.resizeBilinear([224, 224]); // [224, 224, 1]
     const result = await resized.data();
     resized.dispose();
     return Array.from(result);

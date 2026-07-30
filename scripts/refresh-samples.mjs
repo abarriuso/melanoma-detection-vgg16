@@ -7,22 +7,32 @@
 //   node scripts/refresh-samples.mjs              # 60 + 60 por defecto
 //   node scripts/refresh-samples.mjs --count 80   # 80 + 80
 //
-// Requiere que archive/melanoma_cancer_dataset/test/{benign,malignant}/
-// exista (la descarga la gestiona scripts/download_dataset.ps1).
+// Requiere el conjunto de test del dataset descargado. Se acepta tanto
+// dataset/ (donde lo deja scripts/download_dataset.ps1) como archive/
+// (nombre de la carpeta si descomprimes el zip de Kaggle a mano).
 import { readdirSync, copyFileSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
-const srcRoot = join(root, 'archive', 'melanoma_cancer_dataset', 'test');
 const dstRoot = join(root, 'demo', 'public', 'samples');
+
+const CANDIDATE_ROOTS = [
+  join(root, 'dataset', 'melanoma_cancer_dataset', 'test'),
+  join(root, 'archive', 'melanoma_cancer_dataset', 'test'),
+];
+const srcRoot = CANDIDATE_ROOTS.find((p) => existsSync(p));
 
 const arg = process.argv.indexOf('--count');
 const COUNT_PER_CLASS = arg !== -1 ? Number(process.argv[arg + 1]) : 60;
 
-if (!existsSync(srcRoot)) {
-  console.error(`Falta ${srcRoot}. Descarga el dataset primero (scripts/download_dataset.ps1).`);
+if (!srcRoot) {
+  console.error(
+    'No se encuentra el conjunto de test. Se ha buscado en:\n' +
+      CANDIDATE_ROOTS.map((p) => `  - ${p}`).join('\n') +
+      '\nDescarga el dataset primero: pwsh ./scripts/download_dataset.ps1',
+  );
   process.exit(1);
 }
 

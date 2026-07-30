@@ -6,16 +6,18 @@
     <meta name="theme-color" content="#0a0a10" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="preload" as="fetch" href="./model/model.json" crossorigin />
+    <!-- El grafo del modelo por defecto (VGG16). Adelantarlo ahorra un
+         round-trip: TF.js pide model.json antes de los shards de pesos. -->
+    <link rel="preload" as="fetch" href="./model/vgg16/model.json" />
 
     <!-- Content Security Policy se inyecta vía vite plugin (cspPlugin) según modo dev/prod -->
     <!-- Las tipografías (Inter / JetBrains Mono) se auto-hostean vía
          @fontsource y se importan en src/main.jsx. Sin third-party fetches. -->
     <!-- Frame-buster: evita que GitHub Pages (u otro hosting estático sin
-         headers HTTP) sea embebido en un iframe malicioso. -->
-    <script>
-      if (window.top !== window.self) window.top.location = window.self.location;
-    </script>
+         headers HTTP) sea embebido en un iframe malicioso. Va en un fichero
+         aparte, no inline, para que lo cubra `script-src 'self'` sin
+         depender de dónde se inyecte el meta de la CSP. -->
+    <script src="./frame-guard.js"></script>
 
     <title>Segunda opinión para lesiones de piel — VGG16 + TensorFlow.js</title>
     <meta

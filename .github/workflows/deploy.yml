@@ -8,14 +8,11 @@ on:
     branches: [main]
   workflow_dispatch: # permite lanzarlo manualmente desde la pestaña Actions
 
-# Permisos mínimos necesarios (principio de mínimo privilegio).
-# contents:read   → leer el repositorio
-# pages:write     → publicar en GitHub Pages
-# id-token:write  → autenticación OIDC con Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Sin permisos por defecto: cada job pide solo lo que necesita (más abajo).
+# Declararlos aquí arriba se los daría también al job `build`, que es el que
+# ejecuta código de terceros (pnpm install, vite, plugins). Si algo de eso
+# estuviera comprometido, con pages:write podría publicar lo que quisiera.
+permissions: {}
 
 # Evita deploys simultáneos: si hay uno en curso y llega otro push,
 # cancela el anterior y ejecuta el nuevo.
@@ -26,15 +23,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # solo leer el repo; no puede publicar nada
     defaults:
       run:
         working-directory: demo  # la app React vive en demo/
     steps:
       - uses: actions/checkout@v4
+        with:
+          # El build no vuelve a usar git; no dejamos el token en .git/config.
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 11.18.0 # misma versión que en local, sin rango flotante
 
       - uses: actions/setup-node@v4
         with:
@@ -64,6 +66,11 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Los permisos de publicación viven solo aquí, en el job que no ejecuta
+    # ni instala nada: se limita a publicar el artefacto que produjo `build`.
+    permissions:
+      pages: write # publicar en GitHub Pages
+      id-token: write # autenticación OIDC con Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

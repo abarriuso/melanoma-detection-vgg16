@@ -482,7 +482,7 @@ servidor).
 | Imagen enviada a servidor | No |
 | Cookies / tracking / analytics | Ninguno |
 | Conexiones third-party (fuentes, CDN, métricas) | Ninguna |
-| Almacenamiento persistente | Ninguno |
+| Almacenamiento local | Preferencia de modelo y scores del test set (localStorage); assets y pesos del modelo para uso offline (Cache Storage, vía service worker). Ninguna imagen del usuario ni ningún resultado se guarda jamás. |
 | Datos personales procesados en servidor | Ninguno |
 
 ### Modelo de amenazas
@@ -498,15 +498,23 @@ servidor).
 
 ### Hardening aplicado
 
-- Validación de la subida: MIME-type (JPEG/PNG/WebP) y límite de 10 MB.
-- `permissions` mínimos en el workflow (`contents:read`, `pages:write`,
-  `id-token:write`) y `concurrency.cancel-in-progress`.
+- Filtro de la subida: tipo (JPEG/PNG/WebP), tamaño (≤10 MB) y dimensiones
+  (16–4096 px). Es un filtro de experiencia de uso, no una barrera de
+  seguridad: sin servidor, el control real es el decodificador del navegador.
+- Permisos de workflow por job: `build` (que ejecuta dependencias) solo puede
+  leer el repo; `pages:write` e `id-token:write` viven únicamente en el job
+  `deploy`, que no instala ni ejecuta nada.
+- CSP al inicio del `<head>`, sin `unsafe-eval` en producción.
+- Cooldown de dependencias (`minimumReleaseAge`): no se instalan versiones
+  publicadas hace menos de 24 h.
+- Dependabot (npm + github-actions) y overrides de versiones parcheadas para
+  transitivas vulnerables.
 - Sin third-party fetches (fuentes auto-hostadas).
 
 ### Hardening pendiente
 
-- Dependabot + `pnpm audit` continuos.
 - Escaneo de secretos (gitleaks como pre-commit hook).
+- Pinneo de actions por SHA en vez de tag.
 
 ---
 
