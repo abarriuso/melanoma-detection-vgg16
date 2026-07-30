@@ -127,6 +127,48 @@ describe('getModel', () => {
   });
 });
 
+describe('isSoftwareRenderer', () => {
+  let isSoftwareRenderer;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import('../model.js');
+    isSoftwareRenderer = mod.isSoftwareRenderer;
+  });
+
+  it('detecta SwiftShader (Chrome sin aceleración)', () => {
+    expect(isSoftwareRenderer('Google SwiftShader')).toBe(true);
+    expect(isSoftwareRenderer('ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))')).toBe(true);
+  });
+
+  it('detecta llvmpipe y el Microsoft Basic Render Driver', () => {
+    expect(isSoftwareRenderer('llvmpipe (LLVM 15.0.7, 256 bits)')).toBe(true);
+    expect(isSoftwareRenderer('ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11)')).toBe(true);
+  });
+
+  it('no marca GPUs reales como software', () => {
+    expect(isSoftwareRenderer('ANGLE (NVIDIA, NVIDIA GeForce GT 710 Direct3D11)')).toBe(false);
+    expect(isSoftwareRenderer('Apple M1')).toBe(false);
+    expect(isSoftwareRenderer('Mali-G78')).toBe(false);
+  });
+
+  it('devuelve false para null/undefined/vacío', () => {
+    expect(isSoftwareRenderer(null)).toBe(false);
+    expect(isSoftwareRenderer(undefined)).toBe(false);
+    expect(isSoftwareRenderer('')).toBe(false);
+  });
+});
+
+describe('getGpuInfo', () => {
+  it('no lanza en jsdom (sin WebGL) y reporta supported=false', async () => {
+    vi.resetModules();
+    const { getGpuInfo } = await import('../model.js');
+    const info = getGpuInfo();
+    expect(info.supported).toBe(false);
+    expect(info.software).toBe(false);
+  });
+});
+
 describe('getModelMetadata', () => {
   let getModelMetadata;
 

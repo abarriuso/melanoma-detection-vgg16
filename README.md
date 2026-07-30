@@ -430,10 +430,19 @@ pnpm install
 pnpm dev         # http://localhost:5173
 pnpm build       # producción
 pnpm lint        # ESLint
-pnpm test        # Vitest (63 tests unitarios)
+pnpm test        # Vitest
 ```
 
 Requiere el modelo convertido en `demo/public/model/`.
+
+**Requisitos del navegador:** la inferencia corre sobre WebGL, así que hace
+falta un navegador con **aceleración gráfica por hardware activada** (en
+Chrome/Edge: Configuración → Sistema → «Usar aceleración por hardware cuando
+esté disponible»). Sin ella, WebGL cae a un renderizador software y cada
+análisis pasa de ~0,2 s a varios minutos; la demo lo detecta y lo avisa en
+pantalla. La primera inferencia además compila los shaders del modelo, lo que
+puede tardar un rato en GPUs modestas (después queda cacheado y baja a
+décimas de segundo).
 
 ### Tests y CI
 

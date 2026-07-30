@@ -19,19 +19,19 @@
          depender de dónde se inyecte el meta de la CSP. -->
     <script src="./frame-guard.js"></script>
 
-    <title>Segunda opinión para lesiones de piel — VGG16 + TensorFlow.js</title>
+    <title>Clasificador de lesiones de piel — VGG16 + TensorFlow.js</title>
     <meta
       name="description"
-      content="Análisis de lesiones cutáneas con VGG16 fine-tuned (AUC 0.9606). Inferencia 100% client-side con TensorFlow.js. No es un dispositivo médico."
+      content="Proyecto académico: una VGG16 reentrenada clasifica lesiones dermatoscópicas como benignas o malignas, en el navegador. No es un dispositivo médico."
     />
 
     <!-- Open Graph. URLs absolutas (los crawlers no resuelven relativas). -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://abarriuso.github.io/melanoma-detection-vgg16/" />
-    <meta property="og:title" content="Segunda opinión para lesiones de piel" />
+    <meta property="og:title" content="Clasificador de lesiones de piel" />
     <meta
       property="og:description"
-      content="VGG16 fine-tuned · AUC 0.9606 · análisis en tu navegador sin enviar datos. No es un dispositivo médico."
+      content="Proyecto académico: VGG16 reentrenada, inferencia en el navegador con TensorFlow.js. No es un dispositivo médico."
     />
     <meta property="og:image" content="https://abarriuso.github.io/melanoma-detection-vgg16/og.png" />
     <meta property="og:image:width" content="1200" />
@@ -40,42 +40,30 @@
     <meta property="og:locale" content="es_ES" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Segunda opinión para lesiones de piel" />
+    <meta name="twitter:title" content="Clasificador de lesiones de piel" />
     <meta
       name="twitter:description"
-      content="VGG16 fine-tuned · AUC 0.9606 · análisis en tu navegador sin enviar datos."
+      content="Proyecto académico: VGG16 reentrenada, inferencia en el navegador con TensorFlow.js."
     />
     <meta name="twitter:image" content="https://abarriuso.github.io/melanoma-detection-vgg16/og.png" />
 
-    <!-- JSON-LD: enriquece la tarjeta en buscadores y agregadores que
-         entienden Schema.org. Sin coste para usuarios que no lo consumen. -->
+    <!-- JSON-LD para buscadores que entienden Schema.org. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "Segunda opinión para lesiones de piel",
+        "name": "Clasificador de lesiones de piel",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Web Browser",
-        "description": "Proyecto educativo de clasificación de lesiones cutáneas con deep learning (VGG16 + fine-tuning). Inferencia 100% client-side con TensorFlow.js. No es un dispositivo médico.",
+        "description": "Proyecto académico de clasificación de lesiones cutáneas (VGG16 + fine-tuning), con inferencia en el navegador vía TensorFlow.js. No es un dispositivo médico.",
         "url": "https://abarriuso.github.io/melanoma-detection-vgg16/",
         "image": "https://abarriuso.github.io/melanoma-detection-vgg16/og.png",
         "inLanguage": "es",
         "isAccessibleForFree": true,
         "author": {
-          "@type": "Organization",
-          "name": "melanoma-detection-vgg16",
+          "@type": "Person",
+          "name": "Adrián Barriuso Pizarro",
           "url": "https://github.com/abarriuso"
-        },
-        "disclaimers": [
-          "Este es un proyecto académico y no constituye un dispositivo médico.",
-          "No está diseñado para proporcionar diagnósticos médicos ni consejos de tratamiento.",
-          "Consulta siempre a un profesional sanitario cualificado."
-        ],
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "EUR",
-          "description": "Proyecto educativo gratuito"
         }
       }
     </script>

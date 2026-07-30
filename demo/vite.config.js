@@ -48,10 +48,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'og.png'],
       manifest: {
-        name: 'Segunda opinión para lesiones de piel',
-        short_name: 'Melanoma IA',
+        name: 'Clasificador de lesiones de piel',
+        short_name: 'Melanoma',
         description:
-          'Clasificación dermoscópica de lesiones cutáneas con VGG16, ResNet50V2 y EfficientNetV2S. Inferencia 100% client-side con TensorFlow.js.',
+          'Proyecto académico: clasificación de lesiones dermatoscópicas con VGG16, en el navegador con TensorFlow.js. No es un dispositivo médico.',
         lang: 'es',
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,

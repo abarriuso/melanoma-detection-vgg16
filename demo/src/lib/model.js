@@ -106,6 +106,34 @@ export function getBackend() {
   return tf.getBackend();
 }
 
+// ¿El renderer WebGL es software (sin aceleración por hardware)?
+// SwiftShader (Chrome/Edge), llvmpipe (Linux/Mesa) y el Microsoft Basic
+// Render Driver son los rasterizadores software habituales: con cualquiera
+// de ellos una VGG16 pasa de ~0,2 s a minutos por análisis.
+export function isSoftwareRenderer(renderer) {
+  if (!renderer) return false;
+  return /swiftshader|llvmpipe|softpipe|software|microsoft basic render/i.test(renderer);
+}
+
+// Inspecciona el contexto WebGL real del navegador para poder avisar al
+// usuario si tiene la aceleración gráfica desactivada. No lanza nunca:
+// en entornos sin canvas (tests) devuelve `supported: false`.
+export function getGpuInfo() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) return { supported: false, renderer: null, software: false };
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = dbg
+      ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)
+      : gl.getParameter(gl.RENDERER) || '';
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return { supported: true, renderer, software: isSoftwareRenderer(renderer) };
+  } catch {
+    return { supported: false, renderer: null, software: false };
+  }
+}
+
 /**
  * Clasifica una imagen.
  * @param {HTMLImageElement} imgElement

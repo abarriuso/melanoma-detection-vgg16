@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { loadModel, predictImage, getBackend, setActiveModelId } from './lib/model';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { loadModel, predictImage, getBackend, getGpuInfo, setActiveModelId } from './lib/model';
 import { MODELS, getModel, GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, UMBRAL } from './lib/constants';
 import { useCountUp } from './useCountUp';
 import ErrorBoundary from './ErrorBoundary';
@@ -48,6 +49,28 @@ export default function App() {
   const [modelStatus, setModelStatus] = useState('loading'); // loading | ready | error
   const [progress, setProgress] = useState(0);
   const [backend, setBackend] = useState('—');
+  // true si el navegador no tiene aceleración gráfica utilizable
+  const [slowGpu, setSlowGpu] = useState(false);
+
+  // Con "reducir movimiento" activo en el sistema, las transiciones se
+  // vuelven instantáneas (framer-motion ignora los variants vacíos).
+  const prefersReducedMotion = useReducedMotion();
+  const fadeUp = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -4 },
+        transition: { duration: 0.3, ease: 'easeOut' },
+      };
+  const fadeIn = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.2 },
+      };
 
   const [imageURL, setImageURL] = useState(null);
   const [imageError, setImageError] = useState(false);
@@ -143,7 +166,13 @@ export default function App() {
     loadModel(modelId, (p) => mounted && setProgress(Math.round(p * 100)))
       .then(() => {
         if (!mounted) return;
-        setBackend(getBackend());
+        const activeBackend = getBackend();
+        setBackend(activeBackend);
+        // Sin aceleración por hardware (renderer software o backend CPU),
+        // cada análisis pasa de décimas de segundo a minutos. Mejor
+        // avisarlo que dejar que parezca que la página se ha colgado.
+        const gpu = getGpuInfo();
+        setSlowGpu(activeBackend === 'cpu' || !gpu.supported || gpu.software);
         setModelStatus('ready');
       })
       .catch((err) => {
@@ -394,10 +423,11 @@ export default function App() {
       </nav>
 
       <header className="hero">
-        <h1>Segunda opinión para lesiones de piel</h1>
+        <h1>Clasificador de lesiones de piel</h1>
         <p className="subtitle">
-          Modelo {getModel(modelId).name} fine-tuned · AUC {getModel(modelId).auc ?? '—'} · ~0.2 s por análisis.
-          Tus imágenes nunca salen de tu navegador.
+          Una {getModel(modelId).name} reentrenada con 10 000 imágenes dermatoscópicas
+          clasifica la lesión como benigna o maligna (AUC {getModel(modelId).auc ?? '—'} en test).
+          Todo se ejecuta en tu navegador: la imagen no se sube a ningún servidor.
         </p>
         <p className="hero-warn">
           No es un dispositivo médico. Tasa de falsos negativos: ~12%.
@@ -449,6 +479,18 @@ export default function App() {
         )}
         </div>
 
+        <AnimatePresence>
+        {slowGpu && modelStatus === 'ready' && (
+          <motion.div className="gpu-warning" role="status" {...fadeUp}>
+            <strong>La aceleración gráfica del navegador está desactivada o no
+            disponible.</strong>{' '}
+            La página funcionará, pero cada análisis puede tardar minutos en vez
+            de segundos. En Chrome/Edge: Configuración → Sistema → «Usar
+            aceleración por hardware cuando esté disponible», y recarga.
+          </motion.div>
+        )}
+        </AnimatePresence>
+
         <p className="disclaimer disclaimer--top">
           Proyecto académico de investigación. No constituye un dispositivo médico
           ni sustituye la valoración de un profesional sanitario. El modelo tiene
@@ -481,7 +523,7 @@ export default function App() {
             onChange={onPickFile}
           />
           {imageURL && !imageError ? (
-            <div className="preview-wrap">
+            <motion.div className="preview-wrap" {...fadeIn}>
               <img
                 ref={imgRef}
                 src={imageURL}
@@ -505,7 +547,7 @@ export default function App() {
               >
                 ×
               </button>
-            </div>
+            </motion.div>
           ) : (
             <div className="dropzone-hint" id="dropzone-hint">
               <span className="dropzone-icon" aria-hidden="true">+</span>
@@ -524,13 +566,17 @@ export default function App() {
           )}
         </div>
 
+        <AnimatePresence>
         {fileError && (
-          <div className="file-error" role="alert">{fileError}</div>
+          <motion.div className="file-error" role="alert" {...fadeUp}>{fileError}</motion.div>
         )}
+        </AnimatePresence>
 
+        <AnimatePresence>
         {predictionError && (
-          <div className="file-error" role="alert">{predictionError}</div>
+          <motion.div className="file-error" role="alert" {...fadeUp}>{predictionError}</motion.div>
         )}
+        </AnimatePresence>
 
         {examples.length > 0 && (
           <div className="examples">
@@ -617,8 +663,9 @@ export default function App() {
           </div>
         </fieldset>
 
+        <AnimatePresence>
         {result && (
-          <div className="cam-controls">
+          <motion.div className="cam-controls" {...fadeIn}>
             <button
               type="button"
               className={`cam-btn ${showCam ? 'is-on' : ''}`}
@@ -630,14 +677,17 @@ export default function App() {
                 ? 'Calculando relevancia…'
                 : showCam ? 'Ocultar mapa de relevancia' : 'Mapa de relevancia (Grad-CAM)'}
             </button>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
+        <AnimatePresence>
         {result && (
-          <div
+          <motion.div
             className={`result ${result.esMaligno ? 'malignant' : 'benign'}`}
             role="region"
             aria-label="Resultado del análisis"
+            {...fadeUp}
           >
             <div className="result-top">
               <span className="result-label">{result.label}</span>
@@ -682,8 +732,9 @@ export default function App() {
               exposición solar ni antecedentes familiares.
               <span className="threshold-note"> Umbral de decisión: {UMBRAL}.</span>
             </p>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         </div>
       </section>

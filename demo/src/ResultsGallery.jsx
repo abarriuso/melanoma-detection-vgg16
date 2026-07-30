@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { predictImage } from './lib/model';
 import { DATASET_NAME, DATASET_URL } from './lib/constants';
 import './ResultsGallery.css';
@@ -75,6 +76,14 @@ export function isLocalStorageAvailable() {
   }
 }
 
+// Pausa breve entre inferencias de un lote. Cada predict monopoliza la GPU
+// (en equipos modestos, 1-3 s por imagen): sin este respiro el navegador no
+// llega a pintar ni un frame entre una y otra y la página entera se nota
+// congelada mientras dura el lote.
+function yieldToBrowser(ms = 80) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // Carga una imagen oculta y la decodifica. Necesaria para clasificar el
 // pool entero en background sin pintarlas todas en el DOM.
 function loadImage(src) {
@@ -91,6 +100,7 @@ function loadImage(src) {
 export default function ResultsGallery({ modelId }) {
   const base = import.meta.env.BASE_URL;
   const SCORES_KEY = `samples-scores-v${SCORES_VERSION}-${modelId}`;
+  const prefersReducedMotion = useReducedMotion();
 
   const [pool, setPool] = useState([]);          // flat: [{file, real, path}] x ~120
   const [mode, setMode] = useState('random');
@@ -236,6 +246,7 @@ export default function ResultsGallery({ modelId }) {
         }
         // No abortamos el pool por un fallo individual
       }
+      await yieldToBrowser(); // deja pintar un frame entre inferencias
     }
     if (!mountedRef.current || myToken !== opTokenRef.current) return;
     setScoresMap(next);
@@ -286,6 +297,7 @@ export default function ResultsGallery({ modelId }) {
         } catch (err) {
           console.error('clasificar', i, err);
         }
+        await yieldToBrowser(); // deja pintar un frame entre inferencias
       }
       if (Object.keys(scoreUpdates).length > 0) {
         setScoresMap((prev) => {
@@ -522,10 +534,12 @@ export default function ResultsGallery({ modelId }) {
           const realLetter = sample.real === 'malignant' ? 'M' : 'B';
 
           return (
-            <div
+            <motion.div
               key={`${mode}-${i}-${sample.file}`}
               className={`sample-card ${borderClass}`}
-              style={{ animationDelay: `${i * 40}ms` }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 12, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: Math.min(i * 0.03, 0.5) }}
               onMouseMove={onCardMove}
               onMouseLeave={onCardLeave}
             >
@@ -553,7 +567,7 @@ export default function ResultsGallery({ modelId }) {
                   </span>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

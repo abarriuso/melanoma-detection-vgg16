@@ -231,31 +231,26 @@
 }
 
 /* === Grid de muestras ============================================ */
-@keyframes card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 .samples-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
   perspective: 800px;
 }
+/* La entrada escalonada de las cards la gestiona framer-motion
+   (ResultsGallery.jsx), que respeta prefers-reduced-motion. */
 .sample-card {
   position: relative;
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  animation: card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
   transform-style: preserve-3d;
+  /* Las cards fuera del viewport no se pintan; el tamaño estimado evita
+     saltos de scroll. Con 30 tarjetas por lote se nota en equipos flojos. */
+  content-visibility: auto;
+  contain-intrinsic-size: 150px 190px;
 }
 @media (hover: hover) and (pointer: fine) {
   .sample-card:hover {
@@ -268,7 +263,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sample-card { animation: none; }
   .sample-card:hover { transform: none !important; }
   .sample-card:hover img { transform: none !important; }
 }
@@ -334,6 +328,13 @@
 }
 .pred-fail {
   color: var(--malignant);
+}
+
+/* === Tablet ====================================================== */
+@media (max-width: 700px) {
+  .samples-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* === Mobile ====================================================== */

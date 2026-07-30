@@ -52,7 +52,9 @@
 }
 
 .hero h1 {
-  font-size: 2rem;
+  /* Escala fluida entre ~1.55rem (móvil estrecho) y 2rem (escritorio),
+     sin salto brusco en el breakpoint. */
+  font-size: clamp(1.55rem, 4.5vw + 0.55rem, 2rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.15;
@@ -376,6 +378,22 @@
   outline-offset: 2px;
 }
 
+/* === Aviso de GPU sin aceleración ============================== */
+.gpu-warning {
+  margin-bottom: 1.1rem;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--warning);
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-left: 3px solid var(--warning);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.gpu-warning strong {
+  font-weight: 600;
+}
+
 /* === File error ================================================ */
 .file-error {
   margin-top: 0.9rem;
@@ -500,25 +518,15 @@
 }
 
 /* === Result ==================================================== */
-@keyframes result-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes result-reveal {
-  from { clip-path: inset(0 0 100% 0); opacity: 0; }
-  to   { clip-path: inset(0 0 0% 0); opacity: 1; }
-}
+/* La entrada/salida del bloque la gestiona framer-motion (App.jsx),
+   que además respeta prefers-reduced-motion por sí solo. */
 .result {
   margin-top: 1.4rem;
   padding: 1.1rem 1.2rem;
   border: 1px solid transparent;
   border-left-width: 3px;
   border-radius: var(--radius-md);
-  animation: result-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   position: relative;
-}
-@media (prefers-reduced-motion: reduce) {
-  .result { animation: none; }
 }
 .result.benign {
   background: var(--benign-bg);
@@ -535,7 +543,8 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: 0.4rem 0.8rem;
+  flex-wrap: wrap; /* en pantallas muy estrechas, la métrica baja de línea */
   margin-bottom: 0.7rem;
 }
 
@@ -543,10 +552,6 @@
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  animation: result-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .result-label { animation: none; }
 }
 .result-meta {
   display: flex;
@@ -681,11 +686,11 @@
       max(3rem, env(safe-area-inset-bottom))
       max(0.9rem, env(safe-area-inset-left));
   }
-  .hero h1 {
-    font-size: 1.6rem;
-  }
   .examples-row {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .dropzone {
+    min-height: 180px; /* menos pantalla secuestrada antes de ver los ejemplos */
   }
   .confidence-bar {
     height: 8px;
