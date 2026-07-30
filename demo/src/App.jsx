@@ -457,10 +457,13 @@ export default function App() {
       <header className="hero">
         <h1>Detección de melanoma</h1>
         <p className="subtitle">
-          Sube una foto dermatoscópica: una {getModel(modelId).name} reentrenada la
-          clasifica sola, sin pasos intermedios, como benigna o maligna
-          (AUC {getModel(modelId).auc ?? '—'} en test). El análisis corre en tu
-          propio navegador — la imagen nunca se sube a ningún servidor.
+          Sube una foto dermatoscópica y la clasifica sola, sin pasos intermedios,
+          como benigna o maligna. Por dentro hay una {getModel(modelId).name} —una
+          red neuronal ya entrenada de fábrica con más de un millón de fotos— a la
+          que le he hecho <em>fine-tuning</em> (un reentrenamiento especializado)
+          con miles de imágenes de lesiones de piel, hasta un AUC de{' '}
+          {getModel(modelId).auc ?? '—'} en test. Corre entera en tu navegador:
+          la imagen nunca sale de tu dispositivo.
         </p>
         <p className="hero-warn">
           No es un dispositivo médico. Tasa de falsos negativos: ~12%.

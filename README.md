@@ -3,9 +3,12 @@
 [![CI](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml/badge.svg)](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Clasificación binaria de imágenes dermatoscópicas (benigno / maligno) mediante
-transfer learning sobre VGG16, con una demo web que ejecuta el modelo
-íntegramente en el navegador.
+Sube una foto dermatoscópica y un modelo la clasifica como benigna o maligna.
+Por dentro es una **VGG16** —una red neuronal clásica de visión por
+computador, ya entrenada de fábrica con más de un millón de imágenes— a la
+que le he hecho **fine-tuning** (un reentrenamiento especializado, no desde
+cero) con miles de fotos de lesiones de piel. La demo web ejecuta el modelo
+íntegramente en el navegador: nada se envía a un servidor.
 
 **Demo:** https://abarriuso.github.io/melanoma-detection-vgg16/
 
