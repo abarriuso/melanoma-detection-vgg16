@@ -12,7 +12,9 @@ function findTargetLayer(model, modelId) {
       try {
         const named = model.getLayer(entry.targetLayer);
         if (named) return named;
-      } catch {}
+      } catch {
+        // capa no encontrada por nombre; caemos a los candidatos genéricos
+      }
     }
   }
   for (const name of TARGET_LAYER_CANDIDATES) {

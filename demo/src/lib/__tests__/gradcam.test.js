@@ -24,11 +24,11 @@ describe('jet colormap logic', () => {
     paintHeatmap(canvas, new Float32Array([0, 0.5, 1]), 3, 1);
     // t=0 → alfa 0 (completamente transparente)
     expect(pixelData[3]).toBe(0);
-    // t=0.5 → alfa ~0.65 * 255 = ~165
-    expect(pixelData[7]).toBeGreaterThan(100);
-    expect(pixelData[7]).toBeLessThan(200);
-    // t=1 → alfa ~165
-    expect(pixelData[11]).toBeGreaterThan(100);
+    // alpha = t * 0.65; t=0.5 → 0.5 * 0.65 * 255 ≈ 83
+    expect(pixelData[7]).toBeGreaterThan(70);
+    expect(pixelData[7]).toBeLessThan(100);
+    // alpha = t * 0.65; t=1 → 0.65 * 255 ≈ 165
+    expect(pixelData[11]).toBeGreaterThan(150);
   });
 
   it('mapea correctamente los 11 stops del colormap', async () => {

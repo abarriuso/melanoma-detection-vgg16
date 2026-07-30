@@ -177,8 +177,17 @@
   background: var(--bg-elevated);
   position: relative;
 }
-.dropzone:hover,
 .dropzone.drag-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dropzone:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+.dropzone:active {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
@@ -305,10 +314,16 @@
   cursor: pointer;
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
-.cam-btn:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--muted);
+@media (hover: hover) and (pointer: fine) {
+  .cam-btn:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--muted);
+    background: var(--white-hover);
+  }
+}
+.cam-btn:active:not(:disabled) {
   background: var(--white-hover);
+  transform: scale(0.97);
 }
 .cam-btn.is-on {
   color: var(--accent);
@@ -343,10 +358,18 @@
   justify-content: center;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
-.preview-clear:hover {
+@media (hover: hover) and (pointer: fine) {
+  .preview-clear:hover {
+    background: var(--malignant-bg);
+    border-color: var(--malignant);
+    color: var(--malignant);
+  }
+}
+.preview-clear:active {
   background: var(--malignant-bg);
   border-color: var(--malignant);
   color: var(--malignant);
+  transform: scale(0.92);
 }
 .preview-clear:focus-visible {
   outline: 2px solid var(--accent);
@@ -392,10 +415,16 @@
   aspect-ratio: 1;
   transition: border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
 }
-.example-thumb:hover:not(:disabled) {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .example-thumb:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+.example-thumb:active:not(:disabled) {
+  transform: scale(0.94);
   border-color: var(--accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .example-thumb:focus-visible {
   outline: 2px solid var(--accent);
@@ -440,15 +469,6 @@
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
-.analyze-btn:hover:not(:disabled) {
-  background: var(--accent-dim);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.2);
-}
-.analyze-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: none;
-}
 .analyze-btn:disabled {
   background: var(--card-border);
   color: var(--faint);
@@ -458,6 +478,25 @@
 .analyze-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+.analyze-btn-spacer {
+  display: none;
+}
+
+/* El :hover con "lift" solo tiene sentido con ratón; en táctil se queda
+   "pegado" tras el tap y parece un bug. Se restringe a punteros finos y
+   se sustituye por :active (feedback táctil real) en todos los dispositivos. */
+@media (hover: hover) and (pointer: fine) {
+  .analyze-btn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.2);
+  }
+}
+.analyze-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  background: var(--accent-dim);
+  box-shadow: none;
 }
 
 /* === Result ==================================================== */
@@ -656,6 +695,50 @@
     padding-left: 1.1rem;
     padding-right: 1.1rem;
   }
+
+  /* Nav superior: los links son el único punto de fuga del panel; en
+     táctil necesitan más aire para no fallar el tap. */
+  .toplinks {
+    gap: 1.1rem;
+  }
+  .toplinks a {
+    display: inline-block;
+    padding: 0.5rem 0.1rem;
+  }
+
+  /* Selector de modelo: en pantallas estrechas 3 tarjetas con min-width
+     150px dejan una huérfana sola en su fila. Se apilan en una lista
+     vertical de ancho completo, más legible y sin descuadres. */
+  .model-selector-options {
+    flex-direction: column;
+  }
+  .model-card {
+    min-width: 0;
+  }
+
+  /* Botón "Analizar imagen": una vez hay foto cargada es la acción que
+     el usuario quiere repetir sin tener que volver a subir por la
+     pantalla. Se fija al fondo, a un pulgar de distancia, en vez de
+     obligar a hacer scroll cada vez. */
+  .analyze-btn-spacer.analyze-btn-spacer {
+    display: block;
+    height: calc(4.6rem + env(safe-area-inset-bottom));
+  }
+  .analyze-btn.is-pinned {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    width: auto;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  }
 }
 
 /* === Error Boundary ============================================= */
@@ -716,10 +799,13 @@
 .model-card {
   flex: 1;
   min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0.55rem 0.7rem;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 2px;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--card-edge);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -728,17 +814,28 @@
   transition: border-color 0.15s, background 0.15s;
   position: relative;
 }
-.model-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  .model-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+.model-card:active {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
 .model-card.is-active {
   border-color: var(--accent);
-  background: rgba(212, 160, 83, 0.08);
+  background: var(--accent-soft);
 }
 .model-card.is-pending {
   opacity: 0.5;
   cursor: default;
+}
+.model-card.is-pending:hover,
+.model-card.is-pending:active {
+  border-color: var(--card-edge);
+  background: none;
 }
 .model-card input {
   position: absolute;
@@ -746,21 +843,31 @@
   pointer-events: none;
 }
 .model-card-name {
+  grid-column: 1;
+  grid-row: 1;
   font-weight: 600;
   color: var(--text);
   font-size: 0.82rem;
 }
 .model-card-metrics {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+  white-space: nowrap;
   font-size: 0.7rem;
   color: var(--muted);
   font-family: var(--mono);
 }
 .model-card-detail {
+  grid-column: 1 / -1;
+  grid-row: 2;
   font-size: 0.65rem;
   color: var(--accent);
   font-family: var(--mono);
 }
 .model-card-loading {
+  grid-column: 1 / -1;
+  grid-row: 3;
   font-size: 0.65rem;
   color: var(--accent);
   animation: pulse 1.2s ease-in-out infinite;

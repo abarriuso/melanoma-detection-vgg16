@@ -6,7 +6,6 @@ import './ResultsGallery.css';
 // Versión del cache de scores. Se incluye modelId en la clave para que
 // cada modelo tenga su propio cache (modelos distintos dan scores distintos).
 const SCORES_VERSION = 1;
-const SCORES_KEY = `samples-scores-v${SCORES_VERSION}`;
 // Tamaño del lote visible. El pool real es mucho mayor (120+); en pantalla
 // solo mostramos un subconjunto manejable.
 const BATCH_SIZE = 30;
@@ -231,7 +230,7 @@ export default function ResultsGallery({ modelId }) {
       setStorageAvailable(false);
     }
     setScoringStatus('idle');
-  }, [pool, scoresMap, allScored, storageAvailable]);
+  }, [pool, scoresMap, allScored, storageAvailable, SCORES_KEY, modelId]);
 
   // Si el usuario elige un modo que necesita scores y no los hay, los pedimos.
   useEffect(() => {
