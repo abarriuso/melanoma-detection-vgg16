@@ -1,3 +1,22 @@
 allowBuilds:
   core-js: true
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - brace-expansion@1.1.17
+
+# Fuerza versiones parcheadas de dependencias transitivas vulnerables
+# (reportadas por Dependabot/pnpm audit), sin subir de major las
+# dependencias directas que las arrastran.
+overrides:
+  form-data@>=4.0.0 <4.0.6: ^4.0.6
+  undici@>=7.0.0 <7.28.0: ^7.28.0
+  # brace-expansion@5 cambió su interfaz CJS (minimatch@3.x, usado por
+  # eslint, rompe con "expand is not a function" si se fuerza esa mayor
+  # globalmente) — la línea 1.x se queda en su último parche (1.1.17) y
+  # el resto de consumidores (minimatch@5/10) sí toleran saltar a 5.0.8.
+  brace-expansion@<1.1.17: ^1.1.17
+  brace-expansion@>=2.0.0 <5.0.8: ^5.0.8
+  fast-uri@<3.1.4: ^3.1.4
+  js-yaml@>=4.0.0 <4.3.0: ^4.3.0
+  postcss@<8.5.18: ^8.5.18
