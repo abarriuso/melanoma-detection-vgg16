@@ -1,24 +1,22 @@
-# Contributing
+# Contribuir
 
-Thanks for your interest!
+Este es un proyecto personal de portfolio y no busco contribuciones
+activamente, pero si encuentras un bug o tienes una idea, abre un issue o un
+PR sin problema.
 
-This is a portfolio project. While I'm not actively seeking contributions,
-if you find a bug or have an idea, feel free to open an issue or PR.
+## Para arrancar
 
-## Getting started
+1. Haz fork del repo
+2. `cd demo && pnpm install`
+3. `pnpm dev` para el servidor de desarrollo
+4. Haz tus cambios y abre un PR
 
-1. Fork the repo
-2. Install dependencies: `cd demo && pnpm install`
-3. Run dev server: `cd demo && pnpm dev`
-4. Make your changes, then open a PR
+## Antes de abrir el PR
 
-## Guidelines
+- Pasa `pnpm lint` y `pnpm test` (el CI los ejecuta igualmente en cada PR,
+  junto con el build)
+- Si tu cambio afecta a algo documentado en el README, actualízalo también
 
-- Run `pnpm lint` and `pnpm test` before committing
-- Keep the README badges and docs in sync if you change the build
-- Respect the existing code style (Prettier defaults)
-- CI (`.github/workflows/ci.yml`) runs lint, tests and build on every push/PR to main
+## Licencia
 
-## License
-
-By contributing, you agree that your contributions will be licensed under MIT.
+Al contribuir aceptas que tu aportación se licencie bajo MIT.
