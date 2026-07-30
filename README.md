@@ -66,9 +66,26 @@ El entrenamiento tiene dos fases:
 
 1. **Extracción de características** — el backbone entero congelado; solo
    aprende la cabeza (RMSprop, lr 1e-4, hasta 20 épocas).
-2. **Fine-tuning** — se descongela el bloque 5 (las cuatro últimas capas
-   convolucionales) y se reentrena con learning rate bajo (Adam, 1e-5) para
-   adaptar las features de alto nivel sin destruir las genéricas.
+2. **Fine-tuning** — se descongela parte del backbone y se reentrena con
+   learning rate bajo para adaptar las features de alto nivel sin destruir
+   las genéricas.
+
+Los tres notebooks (uno por backbone, en [`notebooks/`](notebooks/)) siguen
+exactamente el mismo guion de principio a fin — mismos datos, misma cabeza,
+las mismas 11 secciones (arquitectura, las dos fases, métricas clínicas,
+Grad-CAM, curva PR, TTA, revisión de falsos negativos, conversión a TF.js) —
+y solo cambia lo que cada red necesita para funcionar bien:
+
+| Backbone | Entrada al backbone | Fine-tuning (fase 2) | LR fase 2 | Capa de Grad-CAM |
+|---|---|---|---|---|
+| VGG16 | `[0, 1]` directo | Últimas 4 capas (bloque 5) | 1e-5 | `block5_conv3` |
+| ResNet50V2 | `Rescaling(2, offset=-1)` → `[-1, 1]` | ~80 capas no-BN (BatchNorm congelado) | 1e-6 | `post_relu` |
+| EfficientNetV2S | `Rescaling(255)` + preprocesado interno de Keras | ~50 % de las capas (BatchNorm congelado) | 1e-5 | `top_conv` |
+
+En ResNet50V2 y EfficientNetV2S se congela BatchNorm durante el fine-tuning:
+sus estadísticas de `moving_mean`/`moving_variance` se corrompen con facilidad
+si se reentrenan con los batches pequeños que usa este dataset. VGG16 no tiene
+ese problema (no usa BatchNorm), así que ahí sí se descongela todo el bloque.
 
 La augmentation va como capas del grafo (flips, rotación, zoom, traslación,
 brillo, contraste) y solo actúa durante el entrenamiento. Con callbacks de lo

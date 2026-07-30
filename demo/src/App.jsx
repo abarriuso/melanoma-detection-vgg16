@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { loadModel, predictImage, getBackend, getGpuInfo, setActiveModelId } from './lib/model';
-import { MODELS, getModel, GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, UMBRAL } from './lib/constants';
+import { MODELS, getModel, GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, EXAMPLES_DATASET2_NAME, EXAMPLES_DATASET2_URL, UMBRAL } from './lib/constants';
 import { useCountUp } from './useCountUp';
 import ErrorBoundary from './ErrorBoundary';
 import './App.css';
@@ -44,6 +44,15 @@ function withTimeout(promise, ms, message) {
   ]);
 }
 
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function App() {
   const [modelStatus, setModelStatus] = useState('loading'); // loading | ready | error
   const [progress, setProgress] = useState(0);
@@ -81,6 +90,10 @@ export default function App() {
   const [dragActive, setDragActive] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
   const [examples, setExamples] = useState([]);
+  // Solo true si el manifest realmente trae imágenes isic17_* (es decir, si
+  // ya se ejecutó scripts/download_examples_dataset.ps1 + refresh-samples.mjs).
+  // No se declara como un hecho fijo: sería falso mientras no se haya hecho.
+  const [hasExamplesDataset2, setHasExamplesDataset2] = useState(false);
   const [modelId, setModelId] = useState(() => {
     const stored = localStorage.getItem('modelId');
     const entry = stored && MODELS.find((m) => m.id === stored);
@@ -107,10 +120,26 @@ export default function App() {
   imageErrorRef.current = imageError;
   predictingRef.current = predicting;
 
-  // Ejemplos fijos del dataset (3 benignos + 3 malignos) para prueba rápida.
-  // Elegidos del manifest como casos representativos y claros.
+  // Ejemplos del dataset (3 benignos + 3 malignos) para prueba rápida. Al
+  // cargar se muestran los primeros del manifest (curados); el botón
+  // "rotar" pide 3+3 al azar del pool completo (que puede incluir un
+  // segundo dataset, ver scripts/refresh-samples.mjs).
   // Además: si la URL trae ?sample=melanoma_X.jpg, intentamos precargar
   // y analizar esa muestra. Permite enlaces directos a casos concretos.
+  const manifestRef = useRef(null);
+
+  const pickExamples = useCallback((d, { random = false } = {}) => {
+    const pickN = (arr, real, n = 3) => {
+      const pool = random ? shuffle(arr) : arr;
+      return pool.slice(0, n).map((name) => ({ real, path: `${BASE}samples/${real}/${name}` }));
+    };
+    return [...pickN(d.malignant, 'malignant'), ...pickN(d.benign, 'benign')];
+  }, []);
+
+  const rotateExamples = useCallback(() => {
+    if (manifestRef.current) setExamples(pickExamples(manifestRef.current, { random: true }));
+  }, [pickExamples]);
+
   useEffect(() => {
     let mounted = true;
     fetch(`${BASE}samples/manifest.json`)
@@ -120,16 +149,18 @@ export default function App() {
       })
       .then((d) => {
         if (!mounted) return;
-        // 3 ejemplos de cada clase: los primeros del manifest (curados)
-        const pickN = (arr, real, n = 3) =>
-          arr.slice(0, n).map((name) => ({ real, path: `${BASE}samples/${real}/${name}` }));
-        setExamples([...pickN(d.malignant, 'malignant'), ...pickN(d.benign, 'benign')]);
+        manifestRef.current = d;
+        setExamples(pickExamples(d));
+        setHasExamplesDataset2(
+          (d.malignant || []).some((f) => f.startsWith('isic17_')) ||
+          (d.benign || []).some((f) => f.startsWith('isic17_')),
+        );
 
         // Resolución del parámetro ?sample=, con cola si el modelo no está listo.
         const params = new URLSearchParams(window.location.search);
         const wanted = params.get('sample');
         if (!wanted) return;
-        const valid = /^melanoma_[\w-]+\.(jpe?g|png|webp)$/i.test(wanted);
+        const valid = /^(melanoma|isic17)_[\w-]+\.(jpe?g|png|webp)$/i.test(wanted);
         if (!valid) {
           setFileError('Formato de muestra inválido en la URL');
           return;
@@ -424,11 +455,12 @@ export default function App() {
       </nav>
 
       <header className="hero">
-        <h1>Clasificador de lesiones de piel</h1>
+        <h1>Detección de melanoma</h1>
         <p className="subtitle">
-          Una {getModel(modelId).name} reentrenada con 10 000 imágenes dermatoscópicas
-          clasifica la lesión como benigna o maligna (AUC {getModel(modelId).auc ?? '—'} en test).
-          Todo se ejecuta en tu navegador: la imagen no se sube a ningún servidor.
+          Sube una foto dermatoscópica: una {getModel(modelId).name} reentrenada la
+          clasifica sola, sin pasos intermedios, como benigna o maligna
+          (AUC {getModel(modelId).auc ?? '—'} en test). El análisis corre en tu
+          propio navegador — la imagen nunca se sube a ningún servidor.
         </p>
         <p className="hero-warn">
           No es un dispositivo médico. Tasa de falsos negativos: ~12%.
@@ -679,7 +711,17 @@ export default function App() {
 
         {examples.length > 0 && (
           <div className="examples">
-            <span className="examples-label">Ejemplos del conjunto de test</span>
+            <div className="examples-head">
+              <span className="examples-label">Ejemplos del conjunto de test</span>
+              <button
+                type="button"
+                className="rotate-examples-btn"
+                onClick={rotateExamples}
+                title="Cambiar por otras 6 muestras al azar"
+              >
+                <span aria-hidden="true">↻</span> Otros ejemplos
+              </button>
+            </div>
             {/* aria-live para anunciar cambios en los ejemplos (ej. al recargar página) */}
             <div aria-live="polite" aria-atomic="true" className="sr-only" id="examples-announcer">
               {examples.length} ejemplos cargados: {examples.filter(e => e.real === 'malignant').length} malignos, {examples.filter(e => e.real === 'benign').length} benignos
@@ -763,10 +805,17 @@ export default function App() {
           <a href={`https://github.com/${GITHUB_USER}`} target="_blank" rel="noreferrer">GitHub</a>
         </div>
         <div className="footer-dataset">
-          Dataset:{' '}
+          {hasExamplesDataset2 ? 'Dataset de entrenamiento' : 'Dataset'}:{' '}
           <a href={DATASET_URL} target="_blank" rel="noreferrer">{DATASET_NAME}</a>
           {' '}(CC0)
         </div>
+        {hasExamplesDataset2 && (
+          <div className="footer-dataset">
+            Ejemplos también de:{' '}
+            <a href={EXAMPLES_DATASET2_URL} target="_blank" rel="noreferrer">{EXAMPLES_DATASET2_NAME}</a>
+            {' '}(CC0)
+          </div>
+        )}
       </footer>
     </div>
   );

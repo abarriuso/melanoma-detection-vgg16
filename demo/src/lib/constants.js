@@ -5,6 +5,12 @@ export const DATASET_NAME = 'Melanoma Skin Cancer Dataset (10 000 imágenes)';
 export const DATASET_URL =
   'https://www.kaggle.com/datasets/hasnainjaved/melanoma-skin-cancer-dataset-of-10000-images';
 
+// Segundo dataset (CC0), solo para variar las miniaturas de ejemplo del
+// panel 1 — el modelo no se entrena con él. Ver scripts/download_examples_dataset.ps1.
+export const EXAMPLES_DATASET2_NAME = 'Melanoma Detection Dataset (ISIC 2017)';
+export const EXAMPLES_DATASET2_URL =
+  'https://www.kaggle.com/datasets/wanderdust/skin-lesion-analysis-toward-melanoma-detection';
+
 export const UMBRAL = 0.5;
 
 export const MODELS = [

@@ -48,10 +48,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'og.png'],
       manifest: {
-        name: 'Clasificador de lesiones de piel',
+        name: 'Detección de melanoma',
         short_name: 'Melanoma',
         description:
-          'Proyecto académico: clasificación de lesiones dermatoscópicas con VGG16, en el navegador con TensorFlow.js. No es un dispositivo médico.',
+          'Proyecto académico: sube una foto dermatoscópica y una VGG16 reentrenada la clasifica sola, en el navegador. No es un dispositivo médico.',
         lang: 'es',
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,
