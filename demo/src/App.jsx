@@ -470,9 +470,9 @@ export default function App() {
             <p>No se pudo cargar el modelo</p>
             <button
               type="button"
-              className="analyze-btn"
+              className="reanalyze-btn"
               onClick={() => window.location.reload()}
-              style={{ marginTop: '0.5rem', fontSize: '0.82rem', padding: '0.5rem 1rem', width: 'auto' }}
+              style={{ marginTop: '0.5rem', width: 'auto' }}
             >
               Reintentar
             </button>
@@ -579,39 +579,11 @@ export default function App() {
         )}
         </AnimatePresence>
 
-        {examples.length > 0 && (
-          <div className="examples">
-            <span className="examples-label">Ejemplos del conjunto de test</span>
-            {/* aria-live para anunciar cambios en los ejemplos (ej. al recargar página) */}
-            <div aria-live="polite" aria-atomic="true" className="sr-only" id="examples-announcer">
-              {examples.length} ejemplos cargados: {examples.filter(e => e.real === 'malignant').length} malignos, {examples.filter(e => e.real === 'benign').length} benignos
-            </div>
-            <div className="examples-row" role="group" aria-label="Imágenes de ejemplo del dataset" aria-describedby="examples-announcer">
-              {examples.map((ex) => (
-                <button
-                  key={ex.path}
-                  type="button"
-                  className={`example-thumb ${ex.real === 'malignant' ? 'is-mal' : 'is-ben'}`}
-                  onClick={() => setImage(ex.path, { auto: true })}
-                  disabled={modelStatus !== 'ready'}
-                  aria-label={`Probar con lesión ${ex.real === 'malignant' ? 'maligna' : 'benigna'}`}
-                  title={ex.real === 'malignant' ? 'Etiqueta: maligno' : 'Etiqueta: benigno'}
-                >
-                  <img
-                    src={ex.path}
-                    alt=""
-                    loading="lazy"
-                    crossOrigin="anonymous"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* El análisis arranca solo al cargar la imagen (subida o ejemplo).
             Aquí solo queda el estado mientras corre y, si ya hay resultado
-            o algo falló, un botón para repetirlo. */}
+            o algo falló, un botón para repetirlo. Va justo debajo del
+            dropzone y antes de "otros ejemplos" / "cambiar de modelo":
+            son ajustes secundarios, no lo primero que hay que ver. */}
         {predicting && (
           <p className="analyzing-status" role="status" aria-live="polite">
             Analizando…
@@ -626,48 +598,6 @@ export default function App() {
             {predictionError ? 'Reintentar análisis' : 'Analizar de nuevo'}
           </button>
         )}
-
-        <fieldset className="model-selector">
-          <legend className="model-selector-title">Modelo de clasificación</legend>
-          <div className="model-selector-options">
-            {MODELS.map((m) => (
-              <label
-                key={m.id}
-                className={`model-card ${modelId === m.id ? 'is-active' : ''} ${m.auc == null ? 'is-pending' : ''}`}
-                title={m.auc == null ? 'Modelo aún sin pesos publicados' : undefined}
-              >
-                <input
-                  type="radio"
-                  name="modelId"
-                  value={m.id}
-                  checked={modelId === m.id}
-                  disabled={predicting || m.auc == null}
-                  onChange={() => {
-                    if (modelId !== m.id) {
-                      setModelId(m.id);
-                      localStorage.setItem('modelId', m.id);
-                      clearImage();
-                    }
-                  }}
-                />
-                <span className="model-card-name">{m.name}</span>
-                <span className="model-card-metrics">
-                  {m.auc != null
-                    ? `AUC ${m.auc} · ${m.sizeMB} MB`
-                    : 'Pendiente de entrenamiento'}
-                </span>
-                {m.auc != null && (
-                  <span className="model-card-detail">
-                    Sens {m.sens} · Esp {m.spec}
-                  </span>
-                )}
-                {modelId === m.id && modelStatus === 'loading' && (
-                  <span className="model-card-loading">cargando…</span>
-                )}
-              </label>
-            ))}
-          </div>
-        </fieldset>
 
         <AnimatePresence>
         {result && (
@@ -746,6 +676,78 @@ export default function App() {
           </motion.div>
         )}
         </AnimatePresence>
+
+        {examples.length > 0 && (
+          <div className="examples">
+            <span className="examples-label">Ejemplos del conjunto de test</span>
+            {/* aria-live para anunciar cambios en los ejemplos (ej. al recargar página) */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only" id="examples-announcer">
+              {examples.length} ejemplos cargados: {examples.filter(e => e.real === 'malignant').length} malignos, {examples.filter(e => e.real === 'benign').length} benignos
+            </div>
+            <div className="examples-row" role="group" aria-label="Imágenes de ejemplo del dataset" aria-describedby="examples-announcer">
+              {examples.map((ex) => (
+                <button
+                  key={ex.path}
+                  type="button"
+                  className={`example-thumb ${ex.real === 'malignant' ? 'is-mal' : 'is-ben'}`}
+                  onClick={() => setImage(ex.path, { auto: true })}
+                  disabled={modelStatus !== 'ready'}
+                  aria-label={`Probar con lesión ${ex.real === 'malignant' ? 'maligna' : 'benigna'}`}
+                  title={ex.real === 'malignant' ? 'Etiqueta: maligno' : 'Etiqueta: benigno'}
+                >
+                  <img
+                    src={ex.path}
+                    alt=""
+                    loading="lazy"
+                    crossOrigin="anonymous"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <fieldset className="model-selector">
+          <legend className="model-selector-title">Modelo de clasificación</legend>
+          <div className="model-selector-options">
+            {MODELS.map((m) => (
+              <label
+                key={m.id}
+                className={`model-card ${modelId === m.id ? 'is-active' : ''} ${m.auc == null ? 'is-pending' : ''}`}
+                title={m.auc == null ? 'Modelo aún sin pesos publicados' : undefined}
+              >
+                <input
+                  type="radio"
+                  name="modelId"
+                  value={m.id}
+                  checked={modelId === m.id}
+                  disabled={predicting || m.auc == null}
+                  onChange={() => {
+                    if (modelId !== m.id) {
+                      setModelId(m.id);
+                      localStorage.setItem('modelId', m.id);
+                      clearImage();
+                    }
+                  }}
+                />
+                <span className="model-card-name">{m.name}</span>
+                <span className="model-card-metrics">
+                  {m.auc != null
+                    ? `AUC ${m.auc} · ${m.sizeMB} MB`
+                    : 'Pendiente de entrenamiento'}
+                </span>
+                {m.auc != null && (
+                  <span className="model-card-detail">
+                    Sens {m.sens} · Esp {m.spec}
+                  </span>
+                )}
+                {modelId === m.id && modelStatus === 'loading' && (
+                  <span className="model-card-loading">cargando…</span>
+                )}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         </div>
       </section>
