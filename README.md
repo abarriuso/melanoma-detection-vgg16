@@ -10,6 +10,7 @@ ejecuta la inferencia íntegramente en el navegador del usuario.
 ![TFJS](https://img.shields.io/badge/TF.js-Client--side-FF6F00)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![AUC](https://img.shields.io/badge/AUC-0.9606-success)
+[![CI](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml/badge.svg)](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml)
 
 **Demo en vivo:** https://abarriuso.github.io/melanoma-detection-vgg16/
 
@@ -355,6 +356,7 @@ Imagen original  ->  Activaciones block5_conv3  ->  Gradientes  ->  Heatmap supe
 │   ├── convert-to-tfjs.mjs         Conversión Keras → TF.js (con temperature)
 │   └── gen-og.mjs                  Regenera demo/public/og.png
 ├── .github/workflows/
+│   ├── ci.yml                      Lint + tests + build en cada push/PR a main
 │   └── deploy.yml                  Despliegue automático a GitHub Pages
 ├── assets/                         Imágenes para el README
 ├── README.md
@@ -428,9 +430,30 @@ pnpm install
 pnpm dev         # http://localhost:5173
 pnpm build       # producción
 pnpm lint        # ESLint
+pnpm test        # Vitest (63 tests unitarios)
 ```
 
 Requiere el modelo convertido en `demo/public/model/`.
+
+### Tests y CI
+
+La demo tiene ~60 tests unitarios con [Vitest](https://vitest.dev/) +
+[Testing Library](https://testing-library.com/) cubriendo: calibración
+(Temperature Scaling), selección de modelo, selección de backend (WebGL/CPU
+con fallback), el colormap y pintado de Grad-CAM, validación de archivos
+subidos (tipo/tamaño), el error boundary y la galería de evaluación.
+
+```bash
+cd demo
+pnpm test            # una vez
+pnpm test:watch      # modo watch
+pnpm test:coverage   # con reporte de cobertura
+```
+
+En cada push o pull request a `main`, [`ci.yml`](.github/workflows/ci.yml)
+corre `lint` + `test` + `build`. El despliegue a GitHub Pages
+([`deploy.yml`](.github/workflows/deploy.yml)) solo se dispara en push a
+`main`, tras el mismo build.
 
 ### D. Desplegar en GitHub Pages
 

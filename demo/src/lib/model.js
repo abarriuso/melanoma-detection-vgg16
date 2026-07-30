@@ -60,6 +60,19 @@ export async function loadModel(modelId, onProgress) {
   const url = `${BASE}${entry.path}`;
   const promise = ensureBackend().then(async () => {
     const model = await tf.loadLayersModel(url, { onProgress });
+    // Warmup: la primera inferencia real de un modelo grande compila los
+    // shaders WebGL sobre la marcha, lo que puede tardar varios segundos
+    // (más en GPUs débiles). Lo hacemos aquí, mientras el modelo todavía
+    // se muestra como "cargando", para que el usuario no lo note al pulsar
+    // "Analizar imagen" por primera vez.
+    try {
+      const warm = tf.tidy(() => model.predict(tf.zeros([1, 224, 224, 3])));
+      await warm.data();
+      warm.dispose();
+    } catch {
+      // Si el warmup falla, la inferencia real lo intentará de nuevo
+      // (y su propio error se gestiona en predictImage/analizar).
+    }
     if (model.userDefinedMetadata) {
       metaCache.set(id, model.userDefinedMetadata);
     } else {

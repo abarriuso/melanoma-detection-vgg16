@@ -14,9 +14,10 @@ if you find a bug or have an idea, feel free to open an issue or PR.
 
 ## Guidelines
 
-- Run `pnpm lint` before committing
+- Run `pnpm lint` and `pnpm test` before committing
 - Keep the README badges and docs in sync if you change the build
 - Respect the existing code style (Prettier defaults)
+- CI (`.github/workflows/ci.yml`) runs lint, tests and build on every push/PR to main
 
 ## License
 

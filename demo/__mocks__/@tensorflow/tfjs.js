@@ -1,5 +1,6 @@
 // Mock de @tensorflow/tfjs para tests unitarios.
 // Simula la API de TF.js con objetos mock que retornan valores predecibles.
+import { vi } from 'vitest';
 
 function createMockTensor() {
   return {
@@ -60,6 +61,7 @@ const tf = {
   }),
   model: vi.fn(() => mockModel),
   input: vi.fn(() => ({ apply: vi.fn(() => createMockTensor()) })),
+  zeros: vi.fn(() => createMockTensor()),
   getBackend: vi.fn(() => 'cpu'),
   setBackend: vi.fn(async () => {}),
   ready: vi.fn(async () => {}),
@@ -75,6 +77,7 @@ export const tidy = tf.tidy;
 export const grad = tf.grad;
 export const model = tf.model;
 export const input = tf.input;
+export const zeros = tf.zeros;
 export const getBackend = tf.getBackend;
 export const setBackend = tf.setBackend;
 export const ready = tf.ready;

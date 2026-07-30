@@ -35,9 +35,14 @@
   cursor: pointer;
   transition: color 0.2s ease, background 0.2s ease;
 }
-.mode-btn:hover:not(:disabled) {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.03);
+@media (hover: hover) and (pointer: fine) {
+  .mode-btn:hover:not(:disabled) {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+.mode-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
 }
 .mode-btn.is-active {
   background: var(--accent-soft);
@@ -81,13 +86,16 @@
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
-.batch-btn:hover:not(:disabled) {
-  background: var(--accent-dim);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
+@media (hover: hover) and (pointer: fine) {
+  .batch-btn:hover:not(:disabled) {
+    background: var(--accent-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
+  }
 }
 .batch-btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
+  background: var(--accent-dim);
   box-shadow: none;
 }
 .batch-btn:disabled {
@@ -106,36 +114,16 @@
   color: var(--accent);
   border: 1px solid var(--card-edge);
 }
-.batch-btn-secondary:hover:not(:disabled) {
+@media (hover: hover) and (pointer: fine) {
+  .batch-btn-secondary:hover:not(:disabled) {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+}
+.batch-btn-secondary:active:not(:disabled) {
   background: var(--accent-soft);
   border-color: var(--accent);
 }
-
-/* Toggle del modo desafío */
-.challenge-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.9rem;
-  font-family: var(--sans);
-  font-size: 0.82rem;
-  color: var(--muted);
-  border: 1px solid var(--card-edge);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-  user-select: none;
-}
-.challenge-toggle:hover {
-  color: var(--text);
-  border-color: var(--muted);
-}
-.challenge-toggle.is-on {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-.challenge-toggle input { accent-color: var(--accent); }
 
 /* Banner de scoring */
 .scoring-banner {
@@ -269,13 +257,15 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
   transform-style: preserve-3d;
 }
-.sample-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(167, 139, 250, 0.12);
-  border-color: var(--accent);
-}
-.sample-card:hover img {
-  transform: scale(1.03);
+@media (hover: hover) and (pointer: fine) {
+  .sample-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(167, 139, 250, 0.12);
+    border-color: var(--accent);
+  }
+  .sample-card:hover img {
+    transform: scale(1.03);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .sample-card { animation: none; }
@@ -346,16 +336,6 @@
   color: var(--malignant);
 }
 
-.sample-guess {
-  font-weight: 500;
-}
-.guess-ok {
-  color: var(--benign);
-}
-.guess-fail {
-  color: var(--malignant);
-}
-
 /* === Mobile ====================================================== */
 @media (max-width: 540px) {
   .samples-grid {
@@ -372,5 +352,11 @@
   }
   .batch-actions {
     flex-direction: column;
+  }
+  /* La etiqueta real ya se ve en la insignia de color sobre la miniatura;
+     repetirla como texto en una tarjeta de ~95px solo añade ruido y fuerza
+     el ajuste de línea. En móvil dejamos solo el veredicto del modelo. */
+  .sample-real {
+    display: none;
   }
 }

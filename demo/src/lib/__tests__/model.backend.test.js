@@ -135,6 +135,20 @@ describe('backend selection', () => {
     expect(result).toHaveProperty('calibrated');
   });
 
+  it('hace un warmup (predict con tensor dummy) tras cargar el modelo', async () => {
+    tf.setBackend.mockImplementation(async () => {});
+    tf.ready.mockImplementation(async () => {});
+    await loadModel('vgg16');
+    expect(tf.zeros).toHaveBeenCalledWith([1, 224, 224, 3]);
+  });
+
+  it('un fallo en el warmup no impide que loadModel resuelva', async () => {
+    tf.setBackend.mockImplementation(async () => {});
+    tf.ready.mockImplementation(async () => {});
+    tf.zeros.mockImplementationOnce(() => { throw new Error('warmup boom'); });
+    await expect(loadModel('vgg16')).resolves.toBeDefined();
+  });
+
   it('predictImage funciona con CPU (fallback)', async () => {
     tf.setBackend.mockImplementation(async (backend) => {
       if (backend === 'webgl') throw new Error('WebGL fail');

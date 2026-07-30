@@ -29,6 +29,18 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 // Solo formatos donde TF.js + canvas se comportan bien. WebP también funciona
 // pero menos navegadores lo decodifican uniformemente; jpeg/png cubren el 99%.
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+// Tope de seguridad para la inferencia. En GPUs débiles o con el driver en
+// mal estado, la primera compilación de shaders WebGL puede tardar mucho;
+// pasado este tiempo asumimos que algo se ha atascado y lo comunicamos en
+// vez de dejar el botón en "Analizando…" para siempre.
+const PREDICT_TIMEOUT_MS = 30_000;
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
 
 export default function App() {
   const [modelStatus, setModelStatus] = useState('loading'); // loading | ready | error
@@ -45,7 +57,14 @@ export default function App() {
   const [dragActive, setDragActive] = useState(false);
   const [autoRun, setAutoRun] = useState(false);
   const [examples, setExamples] = useState([]);
-  const [modelId, setModelId] = useState(() => localStorage.getItem('modelId') || 'vgg16');
+  const [modelId, setModelId] = useState(() => {
+    const stored = localStorage.getItem('modelId');
+    const entry = stored && MODELS.find((m) => m.id === stored);
+    // Ignora un modelId guardado de una sesión anterior si no existe o si
+    // ese modelo todavía no tiene pesos publicados (evita quedar atascado
+    // en el estado 'error' al recargar).
+    return entry && entry.auc != null ? stored : 'vgg16';
+  });
 
   const imgRef = useRef(null);
   const inputRef = useRef(null);
@@ -108,6 +127,9 @@ export default function App() {
     return () => {
       mounted = false;
     };
+    // setImage cambia de identidad en cada render (depende de analizar);
+    // este efecto solo debe correr una vez al montar para resolver ?sample=.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [BASE]);
 
   // Carga del modelo + metadatos técnicos. Se recarga si cambia modelId.
@@ -150,7 +172,11 @@ export default function App() {
     setPredictionError(null);
     try {
       const t0 = performance.now();
-      const { raw, calibrated } = await predictImage(imgRef.current, modelId);
+      const { raw, calibrated } = await withTimeout(
+        predictImage(imgRef.current, modelId),
+        PREDICT_TIMEOUT_MS,
+        'timeout',
+      );
       const ms = Math.round(performance.now() - t0);
       // Si entretanto llegó otro análisis o el componente se desmontó, descartar.
       if (myToken !== runTokenRef.current || !mountedRef.current) return;
@@ -168,7 +194,13 @@ export default function App() {
       });
     } catch (err) {
       console.error('Error en la predicción:', err);
-      if (mountedRef.current) setPredictionError('Error al analizar la imagen. Inténtalo de nuevo.');
+      if (mountedRef.current) {
+        setPredictionError(
+          err?.message === 'timeout'
+            ? 'El análisis está tardando demasiado (posible problema con la GPU del navegador). Inténtalo de nuevo.'
+            : 'Error al analizar la imagen. Inténtalo de nuevo.',
+        );
+      }
     } finally {
       if (mountedRef.current && myToken === runTokenRef.current) setPredicting(false);
     }
@@ -508,9 +540,12 @@ export default function App() {
           </div>
         )}
 
+        {/* Spacer: en móvil el botón real se fija abajo (.analyze-btn.is-pinned);
+            este hueco evita que el contenido salte al aparecer/desaparecer. */}
+        {imageURL && !imageError && <div className="analyze-btn-spacer" aria-hidden="true" />}
         <button
           type="button"
-          className="analyze-btn"
+          className={`analyze-btn ${imageURL && !imageError ? 'is-pinned' : ''}`}
           onClick={analizar}
           disabled={!imageURL || imageError || modelStatus !== 'ready' || predicting}
           title="El análisis se ejecuta en tu navegador. La imagen no sale de tu dispositivo."
@@ -525,13 +560,14 @@ export default function App() {
               <label
                 key={m.id}
                 className={`model-card ${modelId === m.id ? 'is-active' : ''} ${m.auc == null ? 'is-pending' : ''}`}
+                title={m.auc == null ? 'Modelo aún sin pesos publicados' : undefined}
               >
                 <input
                   type="radio"
                   name="modelId"
                   value={m.id}
                   checked={modelId === m.id}
-                  disabled={predicting}
+                  disabled={predicting || m.auc == null}
                   onChange={() => {
                     if (modelId !== m.id) {
                       setModelId(m.id);
