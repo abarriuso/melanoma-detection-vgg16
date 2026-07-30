@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { loadModel, predictImage, getBackend, getGpuInfo, setActiveModelId } from './lib/model';
 import { MODELS, getModel, GITHUB_USER, REPO_NAME, DATASET_NAME, DATASET_URL, UMBRAL } from './lib/constants';
@@ -11,7 +11,6 @@ import './App.css';
 // reusa @tensorflow/tfjs que ya está cargado vía loadModel).
 const BASE = import.meta.env.BASE_URL;
 const loadGradCAM = () => import('./lib/gradcam');
-const ResultsGallery = lazy(() => import('./ResultsGallery'));
 
 // Contador animado para el porcentaje de confianza.
 function ConfidenceCounter({ confidence }) {
@@ -739,12 +738,6 @@ export default function App() {
         </div>
       </section>
       </ErrorBoundary>
-
-      <Suspense fallback={null}>
-        <ErrorBoundary>
-          <ResultsGallery modelId={modelId} />
-        </ErrorBoundary>
-      </Suspense>
       </main>
 
       <footer className="footer">

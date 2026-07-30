@@ -92,7 +92,6 @@ export default defineConfig({
         manualChunks: {
           tfjs: ['@tensorflow/tfjs'],
           react: ['react', 'react-dom'],
-          resultsGallery: ['./src/ResultsGallery'],
         },
       },
     },

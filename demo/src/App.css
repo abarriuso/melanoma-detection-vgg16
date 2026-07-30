@@ -169,7 +169,11 @@
 .dropzone {
   border: 2px dashed var(--card-edge);
   border-radius: var(--radius-md);
-  min-height: 220px;
+  /* Altura fija, no min-height: con min-height el hueco vacío medía 220px
+     pero, al cargar una imagen, la caja pasaba a medir lo que el propio
+     preview ocupara (hasta 320px) — un salto brusco que desplazaba todo
+     lo de debajo (récord real: 220px -> 304px en el mismo frame). */
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,12 +237,15 @@
 /* === Preview ==================================================== */
 .preview-wrap {
   position: relative;
-  display: inline-block;
-  max-width: 100%;
+  width: 100%;
+  height: 100%;
 }
 .preview {
-  max-width: 100%;
-  max-height: 320px;
+  /* Rellena la caja fija del dropzone con "contain": el recuadro nunca
+     cambia de tamaño, sea cual sea la proporción de la imagen subida. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
   transition: filter 0.3s ease;
 }
@@ -690,7 +697,7 @@
     grid-template-columns: repeat(3, 1fr);
   }
   .dropzone {
-    min-height: 180px; /* menos pantalla secuestrada antes de ver los ejemplos */
+    height: 200px; /* menos pantalla secuestrada antes de ver los ejemplos */
   }
   .confidence-bar {
     height: 8px;
@@ -805,11 +812,9 @@
   flex: 1;
   min-width: 150px;
   min-height: 44px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  column-gap: 0.6rem;
-  row-gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--card-edge);
   border-radius: var(--radius-md);
@@ -848,31 +853,21 @@
   pointer-events: none;
 }
 .model-card-name {
-  grid-column: 1;
-  grid-row: 1;
   font-weight: 600;
   color: var(--text);
   font-size: 0.82rem;
 }
 .model-card-metrics {
-  grid-column: 2;
-  grid-row: 1;
-  text-align: right;
-  white-space: nowrap;
   font-size: 0.7rem;
   color: var(--muted);
   font-family: var(--mono);
 }
 .model-card-detail {
-  grid-column: 1 / -1;
-  grid-row: 2;
   font-size: 0.65rem;
   color: var(--accent);
   font-family: var(--mono);
 }
 .model-card-loading {
-  grid-column: 1 / -1;
-  grid-row: 3;
   font-size: 0.65rem;
   color: var(--accent);
   animation: pulse 1.2s ease-in-out infinite;
