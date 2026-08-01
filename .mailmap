@@ -1,0 +1,16 @@
+# RENOMBRAR A .mailmap y colocar en la raíz de cada repo.
+#
+# Unifica las tres identidades que aparecen en tu historial
+# ("Abarriuso", "Adrián Barriuso", "Adrián Barriuso Pizarro") y redirige el
+# email personal al de noreply de GitHub en la vista de `git log` / `shortlog`.
+#
+# Nota: .mailmap NO reescribe el historial ni oculta el email en la API de
+# GitHub. Solo cambia cómo se muestra. Para dejar de exponer el email en
+# commits FUTUROS:
+#   GitHub → Settings → Emails → "Keep my email address private"
+#   git config --global user.name  "Adrián Barriuso Pizarro"
+#   git config --global user.email "125669949+abarriuso@users.noreply.github.com"
+
+Adrián Barriuso Pizarro <125669949+abarriuso@users.noreply.github.com> <adrianbarriusopizarro@gmail.com>
+Adrián Barriuso Pizarro <125669949+abarriuso@users.noreply.github.com> Abarriuso <125669949+abarriuso@users.noreply.github.com>
+Adrián Barriuso Pizarro <125669949+abarriuso@users.noreply.github.com> Adrián Barriuso <adrianbarriusopizarro@gmail.com>

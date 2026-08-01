@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cd demo && pnpm dev",
     "build": "cd demo && pnpm build",
-    "install": "cd demo && pnpm install",
+    "setup": "cd demo && pnpm install",
     "lint": "cd demo && pnpm lint"
   },
   "repository": {
