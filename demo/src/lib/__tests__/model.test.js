@@ -93,15 +93,15 @@ describe('getModel', () => {
     expect(m.id).toBe('vgg16');
     expect(m.name).toBe('VGG16');
     expect(m.path).toContain('model.json');
-    expect(m.temperature).toBe(0.902);
+    expect(m.temperature).toBe(1.3359);
     expect(m.targetLayer).toBe('block5_conv3');
-    expect(m.auc).toBe(0.9606);
+    expect(m.auc).toBe(0.9712);
   });
 
   it('returns ResNet50V2 for its id', () => {
     const m = getModel('resnet50v2');
     expect(m.id).toBe('resnet50v2');
-    expect(m.temperature).toBeNull();
+    expect(m.temperature).toBe(1.0221);
     expect(m.targetLayer).toBe('post_relu');
   });
 
@@ -111,19 +111,19 @@ describe('getModel', () => {
     expect(m.targetLayer).toBe('top_conv');
   });
 
-  it('falls back to VGG16 for unknown id', () => {
+  it('falls back to EfficientNetV2S for unknown id', () => {
     const m = getModel('invalid_model');
-    expect(m.id).toBe('vgg16');
+    expect(m.id).toBe('efficientnetv2s');
   });
 
-  it('falls back to VGG16 for null id', () => {
+  it('falls back to EfficientNetV2S for null id', () => {
     const m = getModel(null);
-    expect(m.id).toBe('vgg16');
+    expect(m.id).toBe('efficientnetv2s');
   });
 
-  it('falls back to VGG16 for undefined id', () => {
+  it('falls back to EfficientNetV2S for undefined id', () => {
     const m = getModel();
-    expect(m.id).toBe('vgg16');
+    expect(m.id).toBe('efficientnetv2s');
   });
 });
 
@@ -181,7 +181,7 @@ describe('getModelMetadata', () => {
   it('returns model metadata from constants as fallback', () => {
     const meta = getModelMetadata('vgg16');
     expect(meta).toBeDefined();
-    expect(meta.version).toBe('1.0.0');
-    expect(meta.temperature).toBe(0.902);
+    expect(meta.version).toBe('2.0.0');
+    expect(meta.temperature).toBe(1.3359);
   });
 });
