@@ -1,235 +1,291 @@
-# Detección de melanoma con VGG16
+# Detección de melanoma con transfer learning (VGG16 · ResNet50V2 · EfficientNetV2S)
 
-[![CI](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml/badge.svg)](https://github.com/abarriuso/melanoma-detection-vgg16/actions/workflows/ci.yml)
+Clasificación binaria de imágenes dermatoscópicas (benigno / maligno) mediante
+*transfer learning*. Se comparan tres arquitecturas de referencia con un
+protocolo idéntico y se sirve la mejor en una demo web que ejecuta la inferencia
+en el navegador del usuario.
+
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00)
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![TF.js](https://img.shields.io/badge/TF.js-Client--side-FF6F00)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Sube una foto dermatoscópica y un modelo la clasifica como benigna o maligna.
-Por dentro es una **VGG16** —una red neuronal clásica de visión por
-computador, ya entrenada de fábrica con más de un millón de imágenes— a la
-que le he hecho **fine-tuning** (un reentrenamiento especializado, no desde
-cero) con miles de fotos de lesiones de piel. La demo web ejecuta el modelo
-íntegramente en el navegador: nada se envía a un servidor.
+**Demo en vivo:** https://abarriuso.github.io/melanoma-detection-vgg16/
 
-**Demo:** https://abarriuso.github.io/melanoma-detection-vgg16/
+> **Aviso.** Este es un proyecto académico y una prueba de concepto. **No es un
+> dispositivo médico, no está validado clínicamente y no debe usarse para tomar
+> decisiones de salud.** Sus resultados se obtienen sobre un único conjunto de
+> datos público y no representan el rendimiento en condiciones clínicas reales.
+> Ante cualquier lesión sospechosa, consulta a un dermatólogo. Texto completo en
+> [DISCLAIMER.md](DISCLAIMER.md).
 
-> Proyecto académico. No es un dispositivo médico: el modelo falla, y falla
-> además en el peor sentido posible (~12 % de melanomas clasificados como
-> benignos). Aviso completo en [DISCLAIMER.md](DISCLAIMER.md).
+---
 
-## Qué hay en el repo
+## Índice
 
-```
-notebooks/            Entrenamiento, uno por backbone (listos para Colab con GPU)
-demo/                 Aplicación web (React + TensorFlow.js)
-scripts/              Descarga del dataset, conversión a TF.js, utilidades
-melanoma_detection_v2.ipynb   Notebook original combinado (referencia histórica)
-```
+- [Motivación y alcance](#motivación-y-alcance)
+- [Datos](#datos)
+- [Metodología](#metodología)
+- [Modelos comparados](#modelos-comparados)
+- [Resultados](#resultados)
+- [Interpretabilidad y calibración](#interpretabilidad-y-calibración)
+- [Arquitectura del sistema](#arquitectura-del-sistema)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Instalación y uso](#instalación-y-uso)
+- [Limitaciones](#limitaciones)
+- [Consideraciones éticas y clínicas](#consideraciones-éticas-y-clínicas)
+- [Referencias](#referencias)
+- [Licencia y datos](#licencia-y-datos)
+- [Autor](#autor)
 
-Hay notebooks para tres backbones (VGG16, ResNet50V2 y EfficientNetV2S), pero
-**solo VGG16 está entrenado y publicado**. Los otros dos aparecen deshabilitados
-en el selector de la demo hasta que entrene y suba sus pesos.
+---
+
+## Motivación y alcance
+
+El melanoma es uno de los cánceres de piel más agresivos, y la evidencia
+clínica asocia su detección temprana con un mejor pronóstico [1]. En la última
+década, las redes neuronales convolucionales (CNN) han demostrado capacidad para
+clasificar lesiones cutáneas a partir de imágenes, en algunos estudios a un nivel
+comparable al de dermatólogos sobre conjuntos de test acotados [2]. Conviene
+subrayar que esos resultados se obtienen en condiciones controladas y no
+equivalen a validación clínica.
+
+El alcance de este trabajo es **educativo**: reproducir, con rigor y de forma
+transparente, un flujo completo de clasificación binaria (benigno / maligno) —
+desde el entrenamiento hasta el despliegue— y comparar tres arquitecturas
+conocidas. No se persigue un sistema de diagnóstico ni se afirma utilidad
+clínica.
+
+## Datos
+
+Se utiliza el *Melanoma Skin Cancer Dataset* (10 000 imágenes, licencia CC0)
+publicado en Kaggle [3]. El conjunto está dividido en entrenamiento y test, con
+una partición interna 80/20 para validación. El test contiene 1 000 imágenes,
+500 por clase.
+
+**Sesgos conocidos del conjunto** (relevantes para interpretar los resultados):
+
+- Está **balanceado artificialmente al 50/50**. La prevalencia real del melanoma
+  en la práctica clínica es muy inferior, por lo que el valor predictivo positivo
+  observado aquí no es trasladable a un entorno real [4].
+- No documenta la distribución de fototipos de piel, el equipamiento ni las
+  condiciones de captura. Un modelo entrenado así puede generalizar mal a
+  poblaciones o dispositivos distintos.
+- Es un único origen de datos: sin validación externa no puede estimarse la
+  generalización fuera de dominio.
+
+## Metodología
+
+El protocolo es común a las tres arquitecturas para que la comparación sea justa:
+
+- **Transfer learning** desde pesos preentrenados en ImageNet [5], técnica
+  estándar cuando el conjunto objetivo es pequeño [6].
+- **Entrenamiento en dos fases:** (1) extracción de características con el
+  *backbone* congelado (RMSprop, lr 1e-4); (2) *fine-tuning* de las capas altas
+  (Adam, lr 1e-5–1e-6). *Callbacks*: `ModelCheckpoint` (mejor `val_loss`),
+  `EarlyStopping` y `ReduceLROnPlateau`.
+- **Data augmentation** solo en entrenamiento: volteos, rotación, zoom,
+  traslación, brillo y contraste.
+- **Ponderación de clases** `class_weight = {0: 1.0, 1: 1.3}` para penalizar más
+  el error sobre la clase maligna y favorecer la sensibilidad [4].
+- **Reproducibilidad:** semilla fija (42), entrada 224×224, mismo pipeline de
+  datos para los tres modelos.
+
+Cada modelo **hornea su preprocesado específico dentro del grafo**, de modo que
+el modelo exportado es autocontenido y el cliente no necesita lógica por modelo.
+
+El entrenamiento se realizó en Kaggle (GPU T4) mediante un notebook conjunto que
+entrena las tres arquitecturas de una sola ejecución
+([`notebooks/entrenamiento_conjunto_kaggle.ipynb`](notebooks/entrenamiento_conjunto_kaggle.ipynb)).
+
+## Modelos comparados
+
+| Modelo | Preprocesado (dentro del grafo) | Fine-tuning (fase 2) | LR fase 2 | Capa Grad-CAM | Referencia |
+|--------|----------------------------------|----------------------|:---------:|---------------|-----------|
+| **EfficientNetV2S** | `Rescaling(255)` + preprocesado interno de Keras | ~50 % de capas (BatchNorm congelado) | 1e-5 | `top_conv` | Tan & Le, 2021 [7] |
+| ResNet50V2 | `Rescaling(2, offset=-1)` → [-1, 1] | ~80 capas no-BN (BatchNorm congelado) | 1e-6 | `post_relu` | He et al., 2016 [8] |
+| VGG16 | `preprocess_input(x·255)` (BGR + medias Caffe) | Últimas 4 capas (bloque 5) | 1e-5 | `block5_conv3` | Simonyan & Zisserman, 2015 [9] |
+
+En ResNet50V2 y EfficientNetV2S se congela `BatchNorm` durante el *fine-tuning*:
+sus estadísticas se degradan con facilidad al reentrenar con lotes pequeños.
 
 ## Resultados
 
-Sobre el conjunto de test (1 000 imágenes, 500 por clase):
+Métricas sobre el conjunto de test (1 000 imágenes, 500 por clase), umbral de
+decisión 0.5. **EfficientNetV2S** obtiene los mejores valores en todas las
+métricas y es el modelo servido por defecto en la demo.
 
-| Métrica | Valor |
-|---------|:-----:|
-| AUC | 0.961 |
-| Accuracy | 88.8 % |
-| Sensibilidad (recall maligno) | 87.8 % |
-| Especificidad | 89.8 % |
-| Average Precision | 0.966 |
-| ECE tras calibrar (T = 0.902) | 0.025 |
+| Modelo | Accuracy | AUC | Sensibilidad | Especificidad | VPP (maligno) | F1 macro | T | FN |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **EfficientNetV2S** | **91.6 %** | **0.9742** | **88.2 %** | **95.0 %** | **94.6 %** | **0.92** | 1.184 | **59** |
+| ResNet50V2 | 90.9 % | 0.9727 | 87.8 % | 94.0 % | 93.6 % | 0.91 | 1.022 | 61 |
+| VGG16 | 90.3 % | 0.9712 | 86.2 % | 94.4 % | 93.9 % | 0.90 | 1.336 | 69 |
 
-|  | Pred. benigno | Pred. maligno |
+*Sensibilidad = recall de la clase maligna. VPP = valor predictivo positivo =
+precisión sobre malignos. T = temperatura de calibración. FN = melanomas no
+detectados. Precisión, F1 y matrices de confusión se derivan del umbral 0.5.*
+
+### Matriz de confusión — EfficientNetV2S
+
+|  | Pred. Benigno | Pred. Maligno |
 |---|:---:|:---:|
-| **Real benigno** | 449 | 51 |
-| **Real maligno** | 61 | 439 |
+| **Real Benigno** | 475 (TN) | 25 (FP) |
+| **Real Maligno** | 59 (FN) | 441 (TP) |
 
-Los 61 falsos negativos son el error que importa: un melanoma etiquetado como
-benigno. El entrenamiento usa `class_weight={0:1, 1:1.3}` para empujar al
-modelo hacia la sensibilidad, a costa de más falsos positivos.
+### Cómo leer estos números (con cautela)
 
-Dos cosas que conviene no perder de vista al leer la tabla: el dataset está
-balanceado artificialmente al 50/50 (la prevalencia clínica real es mucho
-menor, así que el valor predictivo en la práctica sería otro), y no hay
-validación externa — todo sale del mismo dataset de Kaggle, con los sesgos de
-captura y de población que eso arrastra.
+- **Las diferencias entre los tres modelos son pequeñas** (AUC 0.971–0.974).
+  Al tratarse de **una única ejecución de entrenamiento**, sin validación
+  cruzada ni intervalos de confianza, esas diferencias podrían caer dentro de la
+  variabilidad aleatoria entre ejecuciones. No debe concluirse que un modelo es
+  categóricamente "mejor" a partir de estas cifras.
+- Los **59 falsos negativos** (melanomas clasificados como benignos) son el error
+  clínicamente más grave. La ponderación de clases empuja hacia la sensibilidad a
+  costa de más falsos positivos; en un escenario real convendría además bajar el
+  umbral de decisión por debajo de 0.5.
+- El VPP (94.6 %) está inflado por el balance 50/50 del test. Con la prevalencia
+  real (mucho menor), el VPP sería sustancialmente más bajo; la curva
+  Precision-Recall refleja mejor ese régimen que la ROC [4].
 
-![Predicciones del modelo sobre imágenes de test](assets/predicciones.png)
+## Interpretabilidad y calibración
 
-## Qué se le hace al modelo
+- **Grad-CAM** [10] y **Grad-CAM++** [11] generan mapas de calor de las regiones
+  más influyentes en cada predicción. Sirven para comprobar si el modelo atiende a
+  la lesión y no a artefactos del fondo (pelo, reglas, reflejos). Son una ayuda
+  cualitativa, **no una localización del cáncer**.
+- **Calibración por *temperature scaling*** [12]: ajusta la confianza del modelo
+  para que una probabilidad del 80 % signifique realmente ~80 % de acierto. La
+  temperatura `T` de cada modelo se aplica también en el cliente para que la
+  confianza mostrada sea honesta.
+- **Incertidumbre con *MC Dropout*** [13]: múltiples inferencias con *dropout*
+  activo estiman cuánto "duda" el modelo. La demo aún no expone esta señal.
 
-Se parte de VGG16 con pesos de ImageNet y sin su cabeza original. Encima va
-una cabeza nueva: `GlobalAveragePooling2D → Dense(256, ReLU) → Dropout(0.5) →
-Dense(1, sigmoide)`, que produce P(maligno).
+## Arquitectura del sistema
 
-El entrenamiento tiene dos fases:
+El principio de diseño es mover el cómputo al cliente: la inferencia se ejecuta
+en el navegador con TensorFlow.js, sin *backend*. **La imagen del usuario nunca
+sale de su dispositivo.**
 
-1. **Extracción de características** — el backbone entero congelado; solo
-   aprende la cabeza (RMSprop, lr 1e-4, hasta 20 épocas).
-2. **Fine-tuning** — se descongela parte del backbone y se reentrena con
-   learning rate bajo para adaptar las features de alto nivel sin destruir
-   las genéricas.
+| Capa | Entorno | Responsabilidad |
+|------|---------|-----------------|
+| Entrenamiento | Kaggle / Colab (GPU) | Entrenar y exportar los modelos |
+| Inferencia | Navegador del usuario | Clasificar con TensorFlow.js |
+| Hosting | GitHub Pages + Actions | Servir estáticos y automatizar el deploy |
 
-Los tres notebooks (uno por backbone, en [`notebooks/`](notebooks/)) siguen
-exactamente el mismo guion de principio a fin — mismos datos, misma cabeza,
-las mismas 11 secciones (arquitectura, las dos fases, métricas clínicas,
-Grad-CAM, curva PR, TTA, revisión de falsos negativos, conversión a TF.js) —
-y solo cambia lo que cada red necesita para funcionar bien:
+El modelo `.keras` se convierte a TF.js con cuantización `uint8` (el de por
+defecto pesa ~21 MB) y se sirve como estáticos. La app está en React 18 + Vite,
+con gestión de memoria de tensores (`tf.tidy` + `dispose`) y validación de la
+imagen subida (tipo y tamaño).
 
-| Backbone | Entrada al backbone | Fine-tuning (fase 2) | LR fase 2 | Capa de Grad-CAM |
-|---|---|---|---|---|
-| VGG16 | `[0, 1]` directo | Últimas 4 capas (bloque 5) | 1e-5 | `block5_conv3` |
-| ResNet50V2 | `Rescaling(2, offset=-1)` → `[-1, 1]` | ~80 capas no-BN (BatchNorm congelado) | 1e-6 | `post_relu` |
-| EfficientNetV2S | `Rescaling(255)` + preprocesado interno de Keras | ~50 % de las capas (BatchNorm congelado) | 1e-5 | `top_conv` |
+## Estructura del repositorio
 
-En ResNet50V2 y EfficientNetV2S se congela BatchNorm durante el fine-tuning:
-sus estadísticas de `moving_mean`/`moving_variance` se corrompen con facilidad
-si se reentrenan con los batches pequeños que usa este dataset. VGG16 no tiene
-ese problema (no usa BatchNorm), así que ahí sí se descongela todo el bloque.
-
-La augmentation va como capas del grafo (flips, rotación, zoom, traslación,
-brillo, contraste) y solo actúa durante el entrenamiento. Con callbacks de lo
-habitual: checkpoint por `val_loss`, early stopping y reducción de learning
-rate al estancarse.
-
-Un detalle de diseño que simplifica todo lo demás: el modelo recibe la imagen
-en `[0, 1]` y **el preprocesado específico del backbone va horneado dentro del
-grafo**. El fichero exportado es autocontenido, y el cliente web no necesita
-saber qué red tiene delante: siempre hace `pixel / 255` y ya.
-
-Después del entrenamiento se calibra la salida con temperature scaling: una
-única constante T = 0.902 que reescala el logit para que la confianza mostrada
-se parezca a la frecuencia real de acierto (ECE 0.025). Esa misma T está en
-[`demo/src/lib/constants.js`](demo/src/lib/constants.js) y se aplica en el
-navegador.
-
-El notebook incluye además el análisis que me pareció mínimo para un problema
-médico: sensibilidad/especificidad frente al umbral, curva precision-recall
-(más informativa que ROC cuando la prevalencia real es baja), incertidumbre
-por MC Dropout y revisión cualitativa de los falsos negativos con Grad-CAM.
-
-## Cómo se sirve
-
-1. El `.keras` de inferencia (~84 MB) se convierte con `tensorflowjs_converter`
-   a un `model.json` + 4 shards `.bin` **cuantizados a uint8**: ~15 MB en
-   total. La conversión la hace el propio notebook al terminar (también está
-   [`scripts/convert-to-tfjs.mjs`](scripts/convert-to-tfjs.mjs) para hacerla
-   en local).
-2. Esos ficheros se versionan en `demo/public/model/` y GitHub Pages los sirve
-   como estáticos. No hay backend: la imagen del usuario no sale del
-   navegador.
-3. La demo carga el modelo con TF.js sobre WebGL (con caída automática a CPU
-   si WebGL no está disponible) y hace un **warmup** nada más cargar: la
-   primera inferencia compila los shaders de la GPU, que es lento, y es mejor
-   pagarlo durante la barra de carga que en el primer clic del usuario.
-4. El score crudo se calibra con la T del entrenamiento y se decide con
-   umbral 0.5.
-5. Grad-CAM es opcional y se carga con un import dinámico solo si se pide:
-   superpone sobre la imagen las regiones que más pesaron en la decisión.
-6. Un service worker deja app y modelo en caché (~16 MB) para revisitas y
-   uso sin conexión.
-
-**Requisitos del navegador:** hace falta aceleración gráfica por hardware
-activada (en Chrome/Edge: Configuración → Sistema → «Usar aceleración por
-hardware cuando esté disponible»). Sin ella, WebGL cae a un renderizador
-software y cada análisis pasa de décimas de segundo a minutos; la demo lo
-detecta y lo avisa en pantalla.
-
-## Ejecutarlo
-
-### Entrenar (Google Colab)
-
-1. Sube el dataset a tu Drive: `MyDrive/melanoma_cancer_dataset/{train,test}/{benign,malignant}/`.
-2. Abre el notebook del backbone que quieras desde [`notebooks/`](notebooks/)
-   y activa la GPU (Entorno de ejecución → T4).
-3. Ejecuta todas las celdas. El notebook entrena, evalúa y exporta el modelo
-   ya convertido a TF.js en `MyDrive/melanoma_model/<id>/tfjs/`.
-
-Los notebooks se generan con `node scripts/gen-notebooks.mjs`; no conviene
-editar los `.ipynb` a mano.
-
-Para entrenar en local: `pip install -r requirements.txt`, descarga el dataset
-con `pwsh ./scripts/download_dataset.ps1` y abre el notebook con Jupyter.
-
-### Meter los pesos en la demo
-
-```bash
-cp -r <descarga>/vgg16/tfjs/* demo/public/model/vgg16/
+```
+.
+├── notebooks/
+│   ├── entrenamiento_conjunto_kaggle.ipynb   Los 3 backbones de una tirada (Kaggle)
+│   ├── vgg16.ipynb · resnet50v2.ipynb · efficientnetv2s.ipynb
+├── demo/                     Demo web (React + TensorFlow.js)
+│   ├── src/                  App, inferencia (lib/model.js), Grad-CAM, constantes
+│   └── public/model/<id>/    Modelos TF.js (model.json + shards .bin)
+├── scripts/
+│   ├── convert_kaggle_output.py   .keras → TF.js (local / WSL / Kaggle)
+│   ├── kaggle_convert_cell.py     Celda de conversión para Kaggle
+│   ├── convert-to-tfjs.mjs        Conversión alternativa con Node
+│   ├── gen-notebooks.mjs · gen-og.mjs · download_dataset.ps1
+├── models/                   Métricas y notas (los .keras están gitignored)
+├── .github/workflows/        ci.yml + deploy.yml (GitHub Pages)
+├── requirements.txt · LICENSE · DISCLAIMER.md · CONTRIBUTING.md
 ```
 
-Y actualiza `temperature` y las métricas del modelo en
-`demo/src/lib/constants.js` (los imprime la celda de calibración).
+Excluidos del repositorio (`.gitignore`): `*.keras` (~184 MB), el dataset
+(`archive/`) y `node_modules/`.
+
+## Instalación y uso
+
+El repositorio usa **pnpm** para la demo.
+
+### Entrenar
+
+Abre el notebook conjunto en Kaggle con GPU T4 y ejecútalo. Añade el dataset [3]
+desde el panel *Data*. Entrena, evalúa (métricas clínicas, calibración,
+Grad-CAM) y guarda cada `.keras`.
+
+> Los notebooks se generan con `node scripts/gen-notebooks.mjs` (fuente de
+> verdad); no edites los `.ipynb` a mano.
+
+### Convertir los pesos a TF.js
+
+Si el entorno de entrenamiento no tenía `tensorflowjs`, convierte los `.keras`
+sin reentrenar:
+
+```bash
+python scripts/convert_kaggle_output.py     # Linux / WSL / Kaggle
+```
+
+En Windows nativo `tensorflowjs` no instala (por `tensorflow-decision-forests`);
+usa WSL o Kaggle. Copia el resultado a `demo/public/model/<id>/`.
 
 ### Demo en local
 
 ```bash
 cd demo
 pnpm install
-pnpm dev         # http://localhost:5173
-pnpm test        # Vitest
+pnpm dev        # http://localhost:5173
+pnpm build      # producción
 pnpm lint
-pnpm build
 ```
 
-### Tests y CI
-
-La demo tiene 75 tests unitarios (Vitest + Testing Library): calibración,
-selección de modelo y de backend, Grad-CAM, validación de archivos subidos,
-el cache de scores y el error boundary. En cada push o PR a `main`,
-[`ci.yml`](.github/workflows/ci.yml) corre lint + tests + build;
-[`deploy.yml`](.github/workflows/deploy.yml) publica en GitHub Pages tras
-cada push a `main`.
-
-## Seguridad y privacidad
-
-- La imagen se procesa en local. No hay analytics, cookies ni peticiones a
-  terceros (las fuentes van auto-hosteadas).
-- Lo único que persiste en el dispositivo: la preferencia de modelo y los
-  scores del test set (localStorage), y app + modelo en Cache Storage para
-  el modo offline. Ninguna imagen del usuario ni ningún resultado se guarda.
-- CSP sin `unsafe-eval` en producción, inyectada al inicio del `<head>`;
-  protección contra iframes en [`frame-guard.js`](demo/public/frame-guard.js)
-  (GitHub Pages no permite cabeceras propias).
-- CI con permisos por job: el job que instala dependencias solo puede leer;
-  publicar solo puede el job de deploy, que no ejecuta nada.
-- Dependencias: lockfile congelado en CI, Dependabot (npm y actions),
-  overrides para transitivas vulnerables y un cooldown de 24 h antes de
-  aceptar versiones recién publicadas.
-- Pendiente: escaneo de secretos como pre-commit y pinneo de actions por SHA.
-
-## Consideraciones clínicas
-
-Un falso negativo (melanoma etiquetado benigno) puede costar una vida; un
-falso positivo cuesta una biopsia innecesaria. No son errores comparables, y
-por eso el entrenamiento prioriza la sensibilidad. En un despliegue real el
-umbral debería bajarse de 0.5 (a costa de más biopsias) y recalibrarse a la
-prevalencia local — nada de eso está hecho aquí, y es parte de por qué esto
-es un ejercicio y no una herramienta.
+El despliegue a GitHub Pages es automático en cada push a `main` (Actions).
 
 ## Limitaciones
 
-- Un solo dataset, balanceado 50/50 y sin validación externa (ISIC, HAM10000).
-- Sin intervalos de confianza ni repeticiones con semillas distintas: los
-  números de la tabla son de un único entrenamiento.
-- ResNet50V2 y EfficientNetV2S: notebooks listos, pesos sin entrenar.
-- La señal de incertidumbre (MC Dropout) se calcula en el notebook pero la
-  demo no la expone.
-- Solo válido para imágenes dermatoscópicas; con fotos de móvil el modelo
-  opera fuera del dominio en que fue entrenado.
+- **Sin validación externa.** Un solo conjunto de datos; se desconoce la
+  generalización a otros (ISIC, HAM10000 [14]).
+- **Una sola ejecución**, sin validación cruzada ni intervalos de confianza: las
+  diferencias entre modelos deben tomarse con cautela.
+- **Dataset balanceado 50/50**, no representativo de la prevalencia real; el
+  umbral de decisión no está ajustado a la prevalencia.
+- **Posible sesgo demográfico** (fototipos, equipamiento) no caracterizado.
+- Solo imágenes **dermatoscópicas**; no aplica a fotos de móvil.
+
+## Consideraciones éticas y clínicas
+
+En detección de cáncer los errores no son simétricos: un falso negativo (cáncer
+no detectado) es más grave que un falso positivo (biopsia innecesaria). Por eso
+se prioriza la sensibilidad. Aun así, **este proyecto no es un dispositivo médico
+ni sustituye el criterio de un profesional sanitario**, y no debe emplearse para
+decisiones clínicas. La responsabilidad de cualquier diagnóstico recae en un
+dermatólogo certificado.
+
+## Referencias
+
+1. American Cancer Society. *Melanoma Skin Cancer* (información sobre pronóstico y detección temprana). https://www.cancer.org/cancer/types/melanoma-skin-cancer.html
+2. Esteva, A., et al. (2017). "Dermatologist-level classification of skin cancer with deep neural networks." *Nature*, 542, 115–118.
+3. Javed, H. *Melanoma Skin Cancer Dataset of 10000 Images*. Kaggle (CC0). https://www.kaggle.com/datasets/hasnainjaved/melanoma-skin-cancer-dataset-of-10000-images
+4. Buda, M., Maki, A., & Mazurowski, M. A. (2018). "A systematic study of the class imbalance problem in convolutional neural networks." *Neural Networks*, 106, 249–259. arXiv:1710.05381
+5. Deng, J., et al. (2009). "ImageNet: A Large-Scale Hierarchical Image Database." *CVPR*.
+6. Yosinski, J., et al. (2014). "How transferable are features in deep neural networks?" *NeurIPS*. arXiv:1411.1792
+7. Tan, M., & Le, Q. (2021). "EfficientNetV2: Smaller Models and Faster Training." *ICML*. arXiv:2104.00298
+8. He, K., et al. (2016). "Identity Mappings in Deep Residual Networks." *ECCV*. arXiv:1603.05027
+9. Simonyan, K., & Zisserman, A. (2015). "Very Deep Convolutional Networks for Large-Scale Image Recognition." *ICLR*. arXiv:1409.1556
+10. Selvaraju, R. R., et al. (2017). "Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization." *ICCV*. arXiv:1610.02391
+11. Chattopadhay, A., et al. (2018). "Grad-CAM++: Generalized Gradient-Based Visual Explanations for Deep Convolutional Networks." *WACV*. arXiv:1710.11063
+12. Guo, C., et al. (2017). "On Calibration of Modern Neural Networks." *ICML*. arXiv:1706.04599
+13. Gal, Y., & Ghahramani, Z. (2016). "Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning." *ICML*. arXiv:1506.02142
+14. Tschandl, P., Rosendahl, C., & Kittler, H. (2018). "The HAM10000 dataset." *Scientific Data*, 5, 180161.
+
+*Las métricas de la sección [Resultados](#resultados) proceden de la ejecución
+propia descrita en este repositorio, no de las referencias anteriores.*
 
 ## Licencia y datos
 
-Código bajo [MIT](LICENSE). El dataset es el
-[Melanoma Skin Cancer Dataset](https://www.kaggle.com/datasets/hasnainjaved/melanoma-skin-cancer-dataset-of-10000-images)
-de Kaggle (dominio público, CC0).
+Código bajo licencia [MIT](LICENSE). El dataset es de dominio público (CC0),
+cortesía de Hasnain Javed en Kaggle [3].
 
 ## Autor
 
-**Adrián Barriuso Pizarro** — proyecto del Curso de Especialización en IA y
-Big Data (IES Ágora, 2024-2025), retomado en 2026.
+**Adrián Barriuso Pizarro** — proyecto del Curso de Especialización en IA y Big
+Data (IES Ágora, 2024-2025), refactorizado en 2026 para portfolio.
 
-[GitHub](https://github.com/abarriuso) ·
-[LinkedIn](https://www.linkedin.com/in/adrián-barriuso)
+[LinkedIn](https://www.linkedin.com/in/adrián-barriuso) · [GitHub](https://github.com/abarriuso)

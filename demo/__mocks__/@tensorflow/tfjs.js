@@ -31,7 +31,7 @@ function createMockScalar(value) {
 
 const mockModel = {
   predict: vi.fn(() => createMockTensor()),
-  userDefinedMetadata: { version: '1.0.0', temperature: 0.902 },
+  userDefinedMetadata: { version: '2.0.0', temperature: 1.1836 },
   inputs: [{ shape: [null, 224, 224, 3] }],
   outputs: [{ shape: [null, 1] }],
   layers: [

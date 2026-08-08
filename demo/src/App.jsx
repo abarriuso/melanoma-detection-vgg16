@@ -99,8 +99,8 @@ export default function App() {
     const entry = stored && MODELS.find((m) => m.id === stored);
     // Ignora un modelId guardado de una sesión anterior si no existe o si
     // ese modelo todavía no tiene pesos publicados (evita quedar atascado
-    // en el estado 'error' al recargar).
-    return entry && entry.auc != null ? stored : 'vgg16';
+    // en el estado 'error' al recargar). Default: EfficientNetV2S (mejor modelo).
+    return entry && entry.auc != null ? stored : 'efficientnetv2s';
   });
 
   const imgRef = useRef(null);
@@ -475,7 +475,7 @@ export default function App() {
       <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
       <nav className="toplinks" aria-label="Enlaces al código">
         <a
-          href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/vgg16.ipynb`}
+          href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/entrenamiento_conjunto_kaggle.ipynb`}
           target="_blank"
           rel="noreferrer"
         >

@@ -4,7 +4,7 @@ import { getModel } from './constants';
 const BASE = import.meta.env.BASE_URL;
 const modelCache = new Map();
 const metaCache = new Map();
-let activeModelId = 'vgg16';
+let activeModelId = 'efficientnetv2s';
 
 let backendPromise = null;
 async function ensureBackend() {

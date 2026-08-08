@@ -1,0 +1,38 @@
+{
+  "vgg16": {
+    "test_acc": 0.902999997138977,
+    "test_loss": 0.24095693230628967,
+    "auc": 0.971216,
+    "sensibilidad": 0.862,
+    "especificidad": 0.944,
+    "temperature": 1.3358887532544077,
+    "tn": 472,
+    "fp": 28,
+    "fn": 69,
+    "tp": 431
+  },
+  "resnet50v2": {
+    "test_acc": 0.9089999794960022,
+    "test_loss": 0.20967184007167816,
+    "auc": 0.972708,
+    "sensibilidad": 0.878,
+    "especificidad": 0.94,
+    "temperature": 1.0220809323332534,
+    "tn": 470,
+    "fp": 30,
+    "fn": 61,
+    "tp": 439
+  },
+  "efficientnetv2s": {
+    "test_acc": 0.9160000085830688,
+    "test_loss": 0.2144104540348053,
+    "auc": 0.9742080000000001,
+    "sensibilidad": 0.882,
+    "especificidad": 0.95,
+    "temperature": 1.1836391169830454,
+    "tn": 475,
+    "fp": 25,
+    "fn": 59,
+    "tp": 441
+  }
+}

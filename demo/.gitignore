@@ -4,7 +4,15 @@ dist-ssr/
 *.local
 .vite/
 
+# Environment
+.env
+.env.*
+
+# Claude Code
+.claude/
+
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -13,4 +21,7 @@ yarn-error.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# OS
 .DS_Store
+Thumbs.db
