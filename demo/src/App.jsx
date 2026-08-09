@@ -44,6 +44,27 @@ function withTimeout(promise, ms, message) {
   ]);
 }
 
+// localStorage puede lanzar (Safari en modo privado, almacenamiento
+// deshabilitado por política del navegador). Como el getItem se lee dentro
+// del inicializador de useState —o sea, durante el render de App, por encima
+// del ErrorBoundary—, una excepción sin capturar dejaría la página en blanco.
+// Estos wrappers degradan a "sin persistencia" en vez de romper.
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* almacenamiento no disponible: la preferencia no persiste, sin más */
+  }
+}
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -95,7 +116,7 @@ export default function App() {
   // No se declara como un hecho fijo: sería falso mientras no se haya hecho.
   const [hasExamplesDataset2, setHasExamplesDataset2] = useState(false);
   const [modelId, setModelId] = useState(() => {
-    const stored = localStorage.getItem('modelId');
+    const stored = safeGetItem('modelId');
     const entry = stored && MODELS.find((m) => m.id === stored);
     // Ignora un modelId guardado de una sesión anterior si no existe o si
     // ese modelo todavía no tiene pesos publicados (evita quedar atascado
@@ -320,20 +341,24 @@ export default function App() {
     const img = new Image();
     const objectURL = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(objectURL);
       const { naturalWidth: w, naturalHeight: h } = img;
       if (w < 16 || h < 16) {
+        URL.revokeObjectURL(objectURL);
         setFileError(`Imagen demasiado pequeña (${w}×${h}). Mínimo 16×16 píxeles.`);
         return;
       }
       if (w > 4096 || h > 4096) {
+        URL.revokeObjectURL(objectURL);
         setFileError(`Imagen demasiado grande (${w}×${h}). Máximo 4096×4096 píxeles.`);
         return;
       }
       setFileError(null);
       // auto:true: el análisis arranca solo al terminar de cargar la
       // imagen, igual que al elegir un ejemplo. No hace falta un botón.
-      setImage(URL.createObjectURL(file), { auto: true });
+      // Reutiliza el mismo objectURL ya decodificado en vez de crear un
+      // segundo; el cleanup del useEffect que escucha imageURL lo revoca al
+      // cambiar de imagen o desmontar.
+      setImage(objectURL, { auto: true });
     };
     img.onerror = () => {
       URL.revokeObjectURL(objectURL);
@@ -812,7 +837,7 @@ export default function App() {
                   onChange={() => {
                     if (modelId !== m.id) {
                       setModelId(m.id);
-                      localStorage.setItem('modelId', m.id);
+                      safeSetItem('modelId', m.id);
                       clearImage();
                     }
                   }}

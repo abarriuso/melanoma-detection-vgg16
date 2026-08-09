@@ -70,9 +70,31 @@ export default defineConfig({
         // (~1.5 MB) deben caber, así que subimos el techo a 6 MB.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,json,bin}'],
-        // Las muestras del test set no necesitan estar precacheadas (se
-        // descargan al usarse). Reducir el tamaño del install.
-        globIgnores: ['**/samples/benign/**', '**/samples/malignant/**'],
+        globIgnores: [
+          // Las muestras del test set no necesitan estar precacheadas (se
+          // descargan al usarse). Reducir el tamaño del install.
+          '**/samples/benign/**',
+          '**/samples/malignant/**',
+          // Solo se precachea el modelo por defecto (efficientnetv2s). Los
+          // otros dos (~39 MB juntos) descargarían en el install aunque el
+          // usuario nunca los use; se cachean en runtime la primera vez que
+          // se seleccionan (ver runtimeCaching más abajo).
+          '**/model/resnet50v2/**',
+          '**/model/vgg16/**',
+        ],
+        // Modelos no-default: CacheFirst. Se guardan la primera vez que el
+        // usuario cambia a ese modelo y se reutilizan offline después.
+        runtimeCaching: [
+          {
+            urlPattern: /\/model\/(resnet50v2|vgg16)\/.*\.(bin|json)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'models-on-demand',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],
