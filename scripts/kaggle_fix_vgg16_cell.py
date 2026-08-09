@@ -19,6 +19,10 @@
 import os
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
+import subprocess, sys
+# La sesion de Kaggle puede arrancar limpia: aseguramos tensorflowjs.
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "tensorflowjs==4.22.0"], check=True)
+
 import glob, json
 import numpy as np
 from datetime import datetime
@@ -27,7 +31,6 @@ import tensorflowjs as tfjs
 from tensorflow.keras import layers, Model, Input
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.applications.vgg16 import preprocess_input
-from tensorflow.keras.models import load_model
 
 
 def find(name):
@@ -50,6 +53,20 @@ def build_vgg16_native():
     return Model(inputs, outputs, name="melanoma_vgg16")
 
 
+def build_vgg16_lambda():
+    """Arquitectura ORIGINAL (con Lambda) para cargar los pesos entrenados.
+    La Lambda se define aqui (preprocess_input invocable), asi que load_weights
+    funciona; load_model() fallaria porque no puede deserializar la Lambda."""
+    inputs = Input(shape=(224, 224, 3))
+    x = layers.Lambda(lambda t: preprocess_input(t * 255.0))(inputs)
+    base = VGG16(input_tensor=x, include_top=False, weights=None)
+    x = layers.GlobalAveragePooling2D()(base.output)
+    x = layers.Dense(256, activation="relu")(x)
+    x = layers.Dropout(0.5)(x)
+    outputs = layers.Dense(1, activation="sigmoid")(x)
+    return Model(inputs, outputs, name="melanoma_vgg16")
+
+
 tf.keras.backend.clear_session()
 
 kp = find("melanoma_vgg16_final.keras")
@@ -57,10 +74,9 @@ rj = find("resultados_comparativa.json")
 T = float(json.load(open(rj)).get("vgg16", {}).get("temperature", 1.0)) if rj else 1.0
 assert kp, "No encuentro melanoma_vgg16_final.keras"
 
-# 1) Modelo original (con Lambda) solo para extraer pesos.
-orig = load_model(kp, safe_mode=False,
-                  custom_objects={"preprocess_input": preprocess_input})
-orig_by_name = {l.name: l for l in orig.layers}
+# 1) Modelo original reconstruido + load_weights (load_model fallaria por la Lambda).
+orig = build_vgg16_lambda()
+orig.load_weights(kp)
 
 # 2) Modelo nativo equivalente.
 native = build_vgg16_native()
@@ -74,19 +90,15 @@ b = -np.array([103.939, 116.779, 123.68], np.float32)  # medias Caffe (BGR)
 native.get_layer("caffe_preproc").set_weights([k, b])
 native.get_layer("caffe_preproc").trainable = False
 
-# 4) Copiar el resto de pesos entrenados por nombre de capa.
-copiadas, faltan = 0, []
-for layer in native.layers:
-    if layer.name == "caffe_preproc" or not layer.get_weights():
-        continue
-    src = orig_by_name.get(layer.name)
-    if src is None:
-        faltan.append(layer.name); continue
-    try:
-        layer.set_weights(src.get_weights()); copiadas += 1
-    except Exception as e:
-        faltan.append(f"{layer.name} ({e})")
-print(f"Capas con pesos copiados: {copiadas} | sin copiar: {faltan}")
+# 4) Copiar los pesos entrenados POR ORDEN (no por nombre: Keras auto-numera las
+#    Dense distinto en cada modelo y el emparejamiento por nombre falla en la
+#    cabeza clasificadora). Misma secuencia de capas con pesos en ambos modelos.
+orig_w = [l for l in orig.layers if l.get_weights()]
+native_w = [l for l in native.layers if l.get_weights() and l.name != "caffe_preproc"]
+assert len(orig_w) == len(native_w), (len(orig_w), len(native_w))
+for lo, ln in zip(orig_w, native_w):
+    ln.set_weights(lo.get_weights())
+print(f"Capas con pesos copiados: {len(native_w)}")
 
 # 5) Comprobacion rapida: misma prediccion que el original en una imagen dummy.
 x = np.random.rand(1, 224, 224, 3).astype("float32")
