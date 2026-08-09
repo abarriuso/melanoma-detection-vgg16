@@ -56,7 +56,7 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <!-- Subtítulo -->
   <text x="80" y="375" fill="#8593a6" font-family="Inter, system-ui, sans-serif"
         font-size="28" font-weight="400">
-    VGG16 + fine-tuning. Inferencia 100% en el navegador.
+    EfficientNetV2S + fine-tuning. Inferencia 100% en el navegador.
   </text>
 
   <!-- Stack de badges -->
@@ -64,17 +64,17 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <!-- AUC -->
     <rect x="80" y="445" width="200" height="64" rx="2" fill="rgba(94,234,212,0.12)" stroke="#5eead4" stroke-width="1"/>
     <text x="100" y="478" fill="#76859c" font-size="14" letter-spacing="1">AUC</text>
-    <text x="100" y="498" fill="#5eead4" font-size="26" font-weight="600">0.961</text>
+    <text x="100" y="498" fill="#5eead4" font-size="26" font-weight="600">0.974</text>
 
     <!-- Accuracy -->
     <rect x="300" y="445" width="200" height="64" rx="2" fill="rgba(94,234,212,0.06)" stroke="#1f2937" stroke-width="1"/>
     <text x="320" y="478" fill="#76859c" font-size="14" letter-spacing="1">ACCURACY</text>
-    <text x="320" y="498" fill="#e7ecf3" font-size="26" font-weight="600">88.8 %</text>
+    <text x="320" y="498" fill="#e7ecf3" font-size="26" font-weight="600">91.6 %</text>
 
     <!-- Sensibilidad -->
     <rect x="520" y="445" width="240" height="64" rx="2" fill="rgba(94,234,212,0.06)" stroke="#1f2937" stroke-width="1"/>
     <text x="540" y="478" fill="#76859c" font-size="14" letter-spacing="1">SENSIBILIDAD</text>
-    <text x="540" y="498" fill="#e7ecf3" font-size="26" font-weight="600">87.8 %</text>
+    <text x="540" y="498" fill="#e7ecf3" font-size="26" font-weight="600">88.2 %</text>
   </g>
 
   <!-- Footer / firma -->

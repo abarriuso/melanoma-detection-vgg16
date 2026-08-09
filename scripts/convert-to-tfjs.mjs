@@ -3,10 +3,10 @@
  * Convert Keras model (.keras) to TensorFlow.js format with uint8 quantization.
  * 
  * Usage:
- *   node scripts/convert-to-tfjs.mjs <input_model.keras> <output_dir> [--temperature=0.902] [--version=1.0.0] [--model-id=<id>]
+ *   node scripts/convert-to-tfjs.mjs <input_model.keras> <output_dir> [--temperature=<T>] [--version=2.0.0] [--model-id=<id>]
  * 
  * Example:
- *   node scripts/convert-to-tfjs.mjs melanoma_v2_finetuning.keras demo/public/model/vgg16 --temperature=0.902 --version=1.0.0 --model-id=vgg16
+ *   node scripts/convert-to-tfjs.mjs melanoma_vgg16_final.keras demo/public/model/vgg16 --temperature=1.3359 --version=2.0.0 --model-id=vgg16
  * 
  * Requirements:
  *   - TensorFlow.js Node: pnpm add @tensorflow/tfjs-node @tensorflow/tfjs-converter
@@ -26,12 +26,12 @@ const temperatureArg = args.find(a => a.startsWith('--temperature='));
 const versionArg = args.find(a => a.startsWith('--version='));
 const modelIdArg = args.find(a => a.startsWith('--model-id='));
 
-const TEMPERATURE = temperatureArg ? parseFloat(temperatureArg.split('=')[1]) : 0.902;
-const VERSION = versionArg ? versionArg.split('=')[1] : '1.0.0';
+const TEMPERATURE = temperatureArg ? parseFloat(temperatureArg.split('=')[1]) : 1.0;
+const VERSION = versionArg ? versionArg.split('=')[1] : '2.0.0';
 const MODEL_ID = modelIdArg ? modelIdArg.split('=')[1] : 'custom';
 
 if (!inputPath || !outputDir) {
-  console.error('Usage: node scripts/convert-to-tfjs.mjs <input.keras> <output_dir> [--temperature=0.902] [--version=1.0.0] [--model-id=<id>]');
+  console.error('Usage: node scripts/convert-to-tfjs.mjs <input.keras> <output_dir> [--temperature=<T>] [--version=2.0.0] [--model-id=<id>]');
   process.exit(1);
 }
 

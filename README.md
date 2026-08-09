@@ -242,6 +242,11 @@ El despliegue a GitHub Pages es automático en cada push a `main` (Actions).
 
 - **Sin validación externa.** Un solo conjunto de datos; se desconoce la
   generalización a otros (ISIC, HAM10000 [14]).
+- **Métricas medidas en float32; modelo servido cuantizado a uint8.** Las cifras
+  de la tabla provienen del modelo `.keras` en precisión completa; la versión
+  desplegada en la demo está cuantizada (uint8) para reducir tamaño y no se ha
+  reevaluado tras cuantizar. La cuantización puede degradar ligeramente el
+  rendimiento real en el navegador.
 - **Una sola ejecución**, sin validación cruzada ni intervalos de confianza: las
   diferencias entre modelos deben tomarse con cautela.
 - **Dataset balanceado 50/50**, no representativo de la prevalencia real; el

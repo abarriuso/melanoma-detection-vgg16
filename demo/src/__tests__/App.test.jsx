@@ -77,22 +77,22 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/demasiado grande/i);
   });
 
-  it('deshabilita los modelos sin pesos publicados en el selector', async () => {
+  it('habilita los tres modelos en el selector (todos con pesos publicados)', async () => {
     const App = (await import('../App.jsx')).default;
     render(<App />);
     const vgg16Radio = screen.getByRole('radio', { name: /vgg16/i });
     const resnetRadio = screen.getByRole('radio', { name: /resnet50v2/i });
     const efficientnetRadio = screen.getByRole('radio', { name: /efficientnetv2s/i });
     expect(vgg16Radio).toBeEnabled();
-    expect(resnetRadio).toBeDisabled();
-    expect(efficientnetRadio).toBeDisabled();
+    expect(resnetRadio).toBeEnabled();
+    expect(efficientnetRadio).toBeEnabled();
   });
 
-  it('ignora un modelId guardado de una sesión anterior si el modelo no tiene pesos', async () => {
-    localStorage.setItem('modelId', 'resnet50v2');
+  it('usa el modelo por defecto (EfficientNetV2S) si el modelId guardado no existe', async () => {
+    localStorage.setItem('modelId', 'modelo_inexistente');
     const App = (await import('../App.jsx')).default;
     render(<App />);
-    const vgg16Radio = screen.getByRole('radio', { name: /vgg16/i });
-    expect(vgg16Radio).toBeChecked();
+    const efficientnetRadio = screen.getByRole('radio', { name: /efficientnetv2s/i });
+    expect(efficientnetRadio).toBeChecked();
   });
 });

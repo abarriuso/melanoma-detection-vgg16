@@ -51,7 +51,7 @@ export default defineConfig({
         name: 'Detección de melanoma',
         short_name: 'Melanoma',
         description:
-          'Proyecto académico: sube una foto dermatoscópica y una VGG16 reentrenada la clasifica sola, en el navegador. No es un dispositivo médico.',
+          'Proyecto académico: sube una foto dermatoscópica y una red neuronal reentrenada la clasifica sola, en el navegador. No es un dispositivo médico.',
         lang: 'es',
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,
