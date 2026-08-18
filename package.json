@@ -2,12 +2,15 @@
   "name": "melanoma-detection-vgg16",
   "version": "1.0.0",
   "private": true,
-  "description": "Clasificación binaria de imágenes dermatoscópicas con VGG16 + Grad-CAM. Inferencia 100% client-side con TensorFlow.js.",
+  "description": "Clasificación binaria de imágenes dermatoscópicas con transfer learning (VGG16, ResNet50V2 y EfficientNetV2S) + Grad-CAM. Inferencia 100% client-side con TensorFlow.js.",
   "scripts": {
     "dev": "cd demo && pnpm dev",
     "build": "cd demo && pnpm build",
     "setup": "cd demo && pnpm install",
     "lint": "cd demo && pnpm lint"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.3"
   },
   "repository": {
     "type": "git",

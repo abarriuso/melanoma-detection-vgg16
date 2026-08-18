@@ -6,6 +6,27 @@ const modelCache = new Map();
 const metaCache = new Map();
 let activeModelId = 'efficientnetv2s';
 
+function disposeEntry(entry) {
+  // La caché guarda la Promise mientras el modelo carga y el modelo
+  // resuelto después; hay que disponer ambos casos.
+  if (entry instanceof Promise) {
+    entry.then((m) => m?.dispose?.()).catch(() => {});
+  } else {
+    entry?.dispose?.();
+  }
+}
+
+/**
+ * Libera los pesos (GPU/CPU) de un modelo cacheado y lo saca de la caché.
+ * @param {string} id
+ */
+export function disposeModel(id) {
+  const entry = modelCache.get(id);
+  if (entry) disposeEntry(entry);
+  modelCache.delete(id);
+  metaCache.delete(id);
+}
+
 let backendPromise = null;
 async function ensureBackend() {
   if (backendPromise) return backendPromise;
@@ -50,8 +71,8 @@ export async function loadModel(modelId, onProgress) {
     const meta = metaCache.get(id);
     if (meta?.version !== entry.version) {
       console.warn(`Version mismatch for ${id}, reloading...`);
-      modelCache.delete(id);
-      metaCache.delete(id);
+      // Disponer el modelo viejo: borrar solo la entrada fugaba sus pesos.
+      disposeModel(id);
     } else {
       return cached;
     }
@@ -73,10 +94,24 @@ export async function loadModel(modelId, onProgress) {
       // Si el warmup falla, la inferencia real lo intentará de nuevo
       // (y su propio error se gestiona en predictImage/analizar).
     }
+    if (modelCache.get(id) !== promise) {
+      // La entrada fue reemplazada o expulsada mientras cargaba: este
+      // modelo ya no es el activo, disponerlo para no fugar sus pesos.
+      model.dispose?.();
+      return model;
+    }
     if (model.userDefinedMetadata) {
       metaCache.set(id, model.userDefinedMetadata);
     } else {
       metaCache.set(id, { version: entry.version, temperature: entry.temperature });
+    }
+    // Guardar el modelo resuelto (no la Promise) para poder disponerlo.
+    modelCache.set(id, model);
+    // Política de caché: conservar solo el modelo activo. Los tres modelos
+    // juntos suman ~60 MB de pesos residentes en GPU, así que al terminar
+    // de cargar uno se dispone cualquier otro que hubiera en caché.
+    for (const otherId of [...modelCache.keys()]) {
+      if (otherId !== id) disposeModel(otherId);
     }
     return model;
   }, (err) => {

@@ -1,11 +1,14 @@
 /* ================================================================
-   ATLAS DERMATOLÓGICO — App.css
+   MELANOMA-DETECTION — App.css
    ================================================================
-   La página se estructura como un documento editorial: filetes
-   (hairlines) en lugar de cajas, secciones numeradas, medida
-   tipográfica contenida y el círculo del dermatoscopio como motivo
-   de identidad (máscaras circulares, anillos finos, retículas de
-   registro). Todos los valores salen de los tokens de index.css.
+   La página se estructura como la carátula de un instrumento de
+   laboratorio: filetes (hairlines) en lugar de cajas, secciones
+   numeradas, medida tipográfica contenida y el círculo del
+   dermatoscopio como motivo de identidad (máscaras circulares,
+   anillos finos, retículas de registro). Tipografía "instrumento":
+   Plex Sans semibold para titulares, Plex Mono con tracking
+   moderado para etiquetas y cifras tabulares para los datos.
+   Todos los valores salen de los tokens de index.css.
    ================================================================ */
 
 /* ---- Grano de papel (SVG inline en App.jsx) -------------------------- */
@@ -72,7 +75,7 @@
   font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink);
 }
@@ -115,7 +118,7 @@
   font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
 }
@@ -128,19 +131,26 @@
 }
 
 .hero h1 {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: clamp(2.6rem, 5.5vw + 0.5rem, 4.4rem);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   line-height: 1.04;
   margin: 0 0 var(--space-6);
   color: var(--ink);
   text-wrap: balance;
 }
+/* La palabra clave en roman (nada de itálica editorial): peso 600,
+   color acento y un subrayado fino, como una lectura marcada en el
+   dial del instrumento. */
 .hero h1 em {
-  font-style: italic;
-  font-weight: 400;
+  font-style: normal;
+  font-weight: 600;
   color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-border);
+  text-decoration-thickness: 0.045em;
+  text-underline-offset: 0.16em;
 }
 
 .subtitle {
@@ -153,7 +163,6 @@
 .subtitle em {
   color: var(--ink);
   font-style: italic;
-  font-family: var(--serif);
 }
 .metric-highlight {
   font-family: var(--mono);
@@ -206,11 +215,21 @@
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
+/* Índice de sección con corchetes, como la referencia grabada en el
+   frontal de un instrumento: [ 01 ] Captura. */
+.panel-idx::before {
+  content: '[ ';
+  color: var(--hairline-strong);
+}
+.panel-idx::after {
+  content: ' ]';
+  color: var(--hairline-strong);
+}
 .panel-head h2 {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.45rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   margin: 0;
   color: var(--ink);
 }
@@ -387,9 +406,10 @@
 }
 .dropzone-title {
   margin: 0;
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.05rem;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--ink);
   line-height: 1.35;
   text-wrap: balance;
@@ -441,9 +461,6 @@
   object-fit: cover;
   display: block;
   transition: filter 0.3s ease;
-}
-.preview.is-grayscale {
-  filter: grayscale(1) brightness(0.75);
 }
 
 /* Barrido de análisis: un arco que recorre el anillo, no una línea. */
@@ -508,81 +525,6 @@
 .preview-clear:focus-visible {
   outline: 1.5px solid var(--accent);
   outline-offset: 3px;
-}
-
-/* ---- Grad-CAM canvas -------------------------------------------------- */
-.preview-cam {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s ease-out;
-  mix-blend-mode: lighten;
-  z-index: 3;
-}
-.preview-cam.is-on {
-  opacity: 0.85;
-}
-
-/* ---- Grad-CAM toggle --------------------------------------------------- */
-.cam-controls {
-  margin-top: var(--space-5);
-  display: flex;
-  justify-content: center;
-}
-.cam-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 44px;
-  padding: var(--space-1);
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.cam-toggle:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.cam-toggle:focus-visible {
-  outline: 1.5px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: var(--radius-sm);
-}
-.cam-toggle.is-on .cam-toggle-label {
-  color: var(--ink);
-}
-.cam-toggle-track {
-  flex-shrink: 0;
-  width: 36px;
-  height: 18px;
-  border-radius: var(--radius-full);
-  background: var(--paper-sunken);
-  border: 1px solid var(--hairline-strong);
-  position: relative;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-.cam-toggle.is-on .cam-toggle-track {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.cam-toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--ink);
-}
-.cam-toggle.is-on .cam-toggle-thumb {
-  background: var(--paper);
 }
 
 /* ---- GPU Warning ------------------------------------------------------- */
@@ -683,7 +625,7 @@
   font-family: var(--mono);
   font-size: 0.68rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -707,10 +649,10 @@
   flex-shrink: 0;
 }
 .result-card-label {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.7rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   line-height: 1.1;
 }
 .result-card-latency {
@@ -801,7 +743,7 @@
   font-size: 0.6rem;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   margin-top: var(--space-1);
 }
 
@@ -822,7 +764,7 @@
   display: block;
   font-family: var(--mono);
   font-size: 0.7rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 500;
@@ -932,7 +874,7 @@
 .model-selector-title {
   font-family: var(--mono);
   font-size: 0.7rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: var(--space-4);
@@ -1114,9 +1056,9 @@
 }
 .error-boundary-title {
   margin: 0 0 var(--space-2);
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.2rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--malignant);
 }
 .error-boundary-msg {

@@ -83,6 +83,20 @@ export function useImageAnalysis(predictFn) {
 
   const analyze = useCallback(async (imgElement, modelId, modelStatus) => {
     if (!imgElement || modelStatus !== 'ready') return;
+    // Validar dimensiones ANTES de cualquier decodificación a tensor
+    // (fromPixelsAsync materializa el bitmap completo en memoria): una
+    // imagen con dimensiones extremas no debe llegar a TF.js, y una imagen
+    // que el navegador no pudo decodificar (naturalWidth = 0) tampoco.
+    const w = imgElement.naturalWidth;
+    const h = imgElement.naturalHeight;
+    if (!w || !h) {
+      setPredictionError('No se pudo decodificar la imagen. Prueba con otro archivo.');
+      return;
+    }
+    if (w > 4096 || h > 4096) {
+      setPredictionError(`Imagen demasiado grande (${w}×${h}). Máximo 4096×4096 píxeles.`);
+      return;
+    }
     const myToken = ++runTokenRef.current;
     setPredicting(true);
     setPredictionError(null);

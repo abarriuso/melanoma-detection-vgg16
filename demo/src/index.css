@@ -1,13 +1,15 @@
 /* ================================================================
-   ATLAS DERMATOLÓGICO — sistema de diseño
+   MELANOMA-DETECTION — sistema de diseño
    ================================================================
-   Informe clínico editorial sobre papel. Tinta casi negra cálida,
+   Instrumento de laboratorio sobre papel. Tinta casi negra cálida,
    un único acento verdigris (tinta clínica profunda) para acciones,
    foco y estados de progreso. Los semánticos (benigno/maligno/aviso)
    solo aparecen en resultados y alertas. Sin sombras de caja, sin
    glow, sin gradientes decorativos: la estructura se dibuja con
    filetes (hairlines) y el motivo de identidad es el círculo del
-   campo de visión del dermatoscopio.
+   campo de visión del dermatoscopio. Tipografía: IBM Plex Sans para
+   texto y titulares (semibold), IBM Plex Mono para etiquetas y datos
+   técnicos con cifras tabulares.
    ================================================================ */
 
 :root {
@@ -59,10 +61,11 @@
   --radius-md: 6px;
   --radius-full: 9999px;
 
-  /* ---- Tipografía ---- */
-  --serif: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', ui-monospace, Consolas, monospace;
+  /* ---- Tipografía ----
+     Sistema de dos familias: Plex Sans para lectura y titulares,
+     Plex Mono para etiquetas de instrumento, metadatos y cifras. */
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', 'SF Mono', 'Cascadia Code', ui-monospace, Consolas, monospace;
 
   /* ---- Espaciado rítmico ---- */
   --space-1: 0.25rem;

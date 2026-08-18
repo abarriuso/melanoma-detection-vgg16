@@ -3,7 +3,7 @@ import { Component } from 'react';
 /**
  * React Error Boundary: captura errores de rendering en la UI y muestra
  * un fallback en lugar de una pantalla blanca. TF.js crashes, errores
- * de Grad-CAM, etc. no matan toda la app.
+ * de inferencia, etc. no matan toda la app.
  */
 export default class ErrorBoundary extends Component {
   constructor(props) {

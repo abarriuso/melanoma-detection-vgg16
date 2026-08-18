@@ -3,6 +3,15 @@
 //
 //   node scripts/gen-notebooks.mjs   (desde la raíz del repo)
 //
+// FUENTE DE VERDAD: este script regenera EXACTAMENTE los .ipynb versionados
+// de notebooks/ (vgg16, resnet50v2, efficientnetv2s). No edites esos .ipynb
+// a mano: edita este script y regenera.
+//
+// EXCEPCIÓN: notebooks/entrenamiento_conjunto_kaggle.ipynb NO lo genera este
+// script (es una variante "todo en una tirada" para Kaggle que combina los
+// tres) y se mantiene A MANO. Si cambias aquí el pipeline de datos, el setup
+// o las arquitecturas, replica el cambio allí.
+//
 // Diseño:
 //   - Cada notebook es AUTÓNOMO (no copia celdas de otro .ipynb).
 //   - El modelo Keras acepta entrada en [0, 1] RGB (lo que entrega la demo
@@ -29,7 +38,7 @@ function cell(type, source) {
 // ──────────────────────────────────────────────────────────────
 
 function setupCell() {
-  return cell('code', [
+  const src =
 `# === Setup para Google Colab (GPU T4) ===
 # La exportación a TF.js (tensorflowjs) todavía no soporta Keras 3 de forma
 # fiable. Forzamos Keras 2 (legacy) en TODO el notebook: la variable debe
@@ -37,8 +46,30 @@ function setupCell() {
 # tras la instalación, hazlo y reejecuta desde aquí.
 import os
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
-!pip install -q tf-keras tensorflowjs`,
-  ]);
+
+# tensorflowjs depende de tensorflow-decision-forests, que fija una versión
+# exacta de tensorflow. Si no se fijan también tf-keras y tensorflowjs, pip
+# no encuentra una combinación compatible y retrocede hasta tensorflowjs 3.18
+# (de 2022), que arrastra packaging~=20.9 y rompe medio entorno de Colab
+# (xarray, langchain, jupyter-server, sphinx, bigquery...).
+# ydf 0.16.0 además tiene un bug de empaquetado (su protobuf compilado exige
+# >=6.31 aunque su metadata diga >=5.29), por eso se fija a 0.15.0.
+!pip install -q \\
+    "tensorflow==2.19.0" \\
+    "tf-keras==2.19.*" \\
+    "tensorflowjs==4.22.0" \\
+    "ydf==0.15.0" \\
+    "setuptools<81"
+
+# tensorflowjs pide packaging~=23.1, pero el resto del stack de Colab
+# (xarray, db-dtypes, bigquery-magics, langsmith...) pide packaging>=24.2.
+# packaging es estable en ese rango, así que se sube sin problema.
+!pip install -q -U "packaging>=24.1"
+`;
+  // El notebook versionado guarda esta celda como lista de líneas (formato
+  // multilínea de Jupyter). La replicamos para que la regeneración sea
+  // byte a byte idéntica.
+  return cell('code', src.split(/(?<=\n)/));
 }
 
 function importsCell() {
@@ -96,9 +127,8 @@ function configCell(modeloId) {
 `from google.colab import drive
 drive.mount("/content/drive")
 
-# El dataset debe estar en Drive con la estructura:
-#   MyDrive/melanoma_cancer_dataset/{train,test}/{benign,malignant}/*.jpg
-BASE_DIR  = "/content/drive/MyDrive/melanoma_cancer_dataset"
+DATA_PATH = os.environ.get('MELANOMA_DATA_PATH', '/content/drive/MyDrive/datasets/')
+BASE_DIR  = os.path.join(DATA_PATH, 'melanoma_cancer_dataset')
 TRAIN_DIR = os.path.join(BASE_DIR, "train")
 TEST_DIR  = os.path.join(BASE_DIR, "test")
 TEST_BEN_DIR = os.path.join(TEST_DIR, "benign")
@@ -122,7 +152,13 @@ print("Modelos:", os.path.join(MODEL_DIR, MODELO_ID))`,
   ]);
 }
 
-function dataCells() {
+// augNote: párrafo específico del modelo sobre cómo se hornea su preprocesado
+// (si no se pasa, se usa el texto genérico).
+function dataCells(augNote) {
+  const augNoteMd = augNote ??
+`El modelo recibe la imagen en **[0, 1]** (igual que la demo TF.js, que hace
+\`/255\`). El preprocesado propio de cada backbone se hornea dentro del modelo,
+no aquí, para que el modelo exportado sea autocontenido.`;
   return [
     cell('markdown', [
 `## 1. Pipeline de datos con \`tf.data\`
@@ -157,9 +193,7 @@ print(f"Batches  train: {len(train_ds)} | val: {len(val_ds)} | test: {len(test_d
     cell('markdown', [
 `### Augmentation y normalización
 
-El modelo recibe la imagen en **[0, 1]** (igual que la demo TF.js, que hace
-\`/255\`). El preprocesado propio de cada backbone se hornea dentro del modelo,
-no aquí, para que el modelo exportado sea autocontenido.
+${augNoteMd}
 
 Augmentation enriquecida: geométrica (flip/rotación/zoom/traslación) +
 fotométrica (brillo/contraste), crítica en dermatoscopia donde la iluminación
@@ -576,7 +610,7 @@ function buildNotebook(cfg) {
   cells.push(importsCell());
   cells.push(gpuCheckCell());
   cells.push(configCell(cfg.id));
-  cells.push(...dataCells());
+  cells.push(...dataCells(cfg.augNote));
   cells.push(cell('markdown', [`## 2. Arquitectura — ${cfg.name}\n\n${cfg.archNote}`]));
   cells.push(cell('code', [cfg.archCode]));
   cells.push(helpersCell());
@@ -635,17 +669,27 @@ Adrián Barriuso Pizarro · 2026
 
 **Fase 1** — VGG16 congelado, RMSprop 1e-4, 20 epochs.
 **Fase 2** — Bloque 5 descongelado (últimas 4 capas), Adam 1e-5, 30 epochs.`,
+  augNote:
+`El pipeline entrega imágenes en **[0, 1]**. El preprocesado específico de
+VGG16 (conversión RGB→BGR + resta de medias Caffe) se hornea dentro del modelo
+(véase §2) para que el modelo exportado sea autocontenido y compatible con la
+demo (que también entrega [0, 1] y divide entre 255).`,
   archNote:
-`VGG16 se alimenta directamente con la imagen en [0, 1] (mismo preprocesado que
-la demo y que el modelo desplegado). Se construye con \`input_tensor=\` para
-obtener un grafo plano y poder aplicar Grad-CAM sobre \`block5_conv3\`.`,
+`VGG16 espera preprocesado Caffe: BGR + resta de medias [103.939, 116.779, 123.68].
+El pipeline entrega [0, 1] RGB; añadimos \`preprocess_input\` dentro del modelo
+(mediante una capa Lambda) para que el modelo exportado sea autocontenido y
+compatible con la demo (que también entrega [0, 1] y divide entre 255).
+Se construye con \`input_tensor=\` para obtener un grafo plano y aplicar Grad-CAM.`,
   archCode:
 `from tensorflow.keras.applications import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input
 
 TARGET_LAYER = "block5_conv3"   # última conv de VGG16 (14×14×512)
 
 inputs = Input(shape=(224, 224, 3))   # [0, 1] RGB
-base = VGG16(input_tensor=inputs, include_top=False, weights="imagenet")
+# VGG16 preprocesado Caffe: RGB→BGR + resta de medias [103.939, 116.779, 123.68]
+x = layers.Lambda(lambda x: preprocess_input(x * 255.0))(inputs)
+base = VGG16(input_tensor=x, include_top=False, weights="imagenet")
 base.trainable = False                # Fase 1: congelado
 
 x = layers.GlobalAveragePooling2D()(base.output)
@@ -697,9 +741,17 @@ Adrián Barriuso Pizarro · 2026
 **Fase 2** — ~50% de capas no-BN descongeladas, **BatchNorm congelado**,
 Adam 1e-6 (más conservador: ResNet tiene más capacidad), 40 epochs.`,
   archNote:
-`ResNet50V2 espera entrada en [-1, 1]; añadimos \`Rescaling(2, offset=-1)\` dentro
-del modelo (la demo entrega [0, 1]). \`base(training=False)\` no aplica aquí
-porque usamos \`input_tensor\`; el control de BatchNorm se hace en la Fase 2.`,
+`ResNet50V2 espera entrada en modo 'tf' ([-1, 1]); añadimos \`Rescaling(2, offset=-1)\`
+dentro del modelo (la demo entrega [0, 1]). **No usar modo 'caffe' (BGR + resta de
+medias)**: ResNet50V2 no se entrenó con ese preprocesado y colapsaría.
+
+NOTA: si el modelo colapsa (sensibilidad=1.0, especificidad=0.0), comprobar:
+  1. El preprocesado correcto ([-1,1], no BGR).
+  2. BatchNorm congelado en fine-tuning (\`layer.trainable = False\`).
+  3. Learning rate bajo (Adam 1e-6 en vez de 1e-5).
+
+\`base(training=False)\` no aplica aquí porque usamos \`input_tensor\`; el control
+de BatchNorm se hace en la Fase 2.`,
   archCode:
 `from tensorflow.keras.applications import ResNet50V2
 
@@ -820,3 +872,5 @@ for (const cfg of [VGG16, RESNET, EFFNET]) {
 }
 
 console.log('\nAll notebooks generated.');
+console.log('NOTA: notebooks/entrenamiento_conjunto_kaggle.ipynb NO lo genera este');
+console.log('script: se mantiene a mano (variante Kaggle "todo en una tirada").');

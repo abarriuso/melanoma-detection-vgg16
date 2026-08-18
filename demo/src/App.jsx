@@ -9,7 +9,6 @@ import ModelStatusBar from './components/ModelStatusBar';
 import GpuWarning from './components/GpuWarning';
 import Dropzone from './components/Dropzone';
 import ResultCard from './components/ResultCard';
-import GradCamToggle from './components/GradCamToggle';
 import ModelSelector from './components/ModelSelector';
 import ExampleGallery from './components/ExampleGallery';
 import Footer from './components/Footer';
@@ -17,7 +16,6 @@ import ErrorBoundary from './ErrorBoundary';
 import './App.css';
 
 const BASE = import.meta.env.BASE_URL;
-const loadGradCAM = () => import('./lib/gradcam');
 
 function shuffle(arr) {
   const a = [...arr];
@@ -59,14 +57,7 @@ export default function App() {
     clearImage,
     handleFile,
     analyze,
-    mountedRef,
   } = useImageAnalysis(predict);
-
-  // --- Grad-CAM ---
-  const [showCam, setShowCam] = useState(false);
-  const [camBusy, setCamBusy] = useState(false);
-  const camCanvasRef = useRef(null);
-  const [camRect, setCamRect] = useState(null);
 
   // --- Refs ---
   const imgRef = useRef(null);
@@ -143,61 +134,7 @@ export default function App() {
     }
   }, [modelStatus, imageURL, analizar]);
 
-  // --- Grad-CAM ---
-  const renderGradCAM = useCallback(async () => {
-    if (!imgRef.current || !camCanvasRef.current) return;
-    setCamBusy(true);
-    try {
-      const { loadModel: loadModelFn } = await import('./lib/model');
-      const [{ computeGradCAM, paintHeatmap }, model] = await Promise.all([
-        loadGradCAM(),
-        loadModelFn(validModelId),
-      ]);
-      const heatmap = await computeGradCAM(model, imgRef.current, validModelId);
-      if (!mountedRef.current) return;
-      paintHeatmap(camCanvasRef.current, heatmap, 224, 224);
-    } catch (err) {
-      console.error('Grad-CAM:', err);
-      if (mountedRef.current) {
-        setShowCam(false);
-      }
-    } finally {
-      if (mountedRef.current) setCamBusy(false);
-    }
-  }, [validModelId, mountedRef]);
-
-  useEffect(() => {
-    if (!showCam || !result) return;
-    renderGradCAM();
-  }, [showCam, result, renderGradCAM]);
-
-  // --- Cálculo rect de Grad-CAM ---
-  // La imagen se muestra con object-fit: cover dentro de la máscara
-  // circular y el heatmap se estira sobre la imagen completa (igual que
-  // resizeBilinear, que estira a 224×224). El rect "cover" puede salirse
-  // del contenedor; la máscara circular lo recorta igual que a la imagen.
-  const updateCamRect = useCallback(() => {
-    const img = imgRef.current;
-    if (!img || !img.naturalWidth || !img.naturalHeight) return;
-    const cw = img.clientWidth;
-    const ch = img.clientHeight;
-    if (!cw || !ch) return;
-    const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    setCamRect({ left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h });
-  }, []);
-
-  useEffect(() => {
-    const img = imgRef.current;
-    if (!img || !imageURL) return;
-    const ro = new ResizeObserver(updateCamRect);
-    ro.observe(img);
-    return () => ro.disconnect();
-  }, [imageURL, updateCamRect]);
-
   const onImgLoad = () => {
-    updateCamRect();
     if (autoRun) {
       setAutoRun(false);
       if (modelStatus === 'ready') {
@@ -228,7 +165,10 @@ export default function App() {
     const onKey = (e) => {
       if (e.key !== 'Enter') return;
       const t = e.target;
-      if (t?.matches?.('input, textarea, [contenteditable="true"], button')) return;
+      // Excluir cualquier interactivo enfocado: Enter sobre un enlace o un
+      // role="button" (p. ej. el dropzone) debe conservar su comportamiento
+      // nativo, no disparar el análisis ni cancelar la navegación.
+      if (t?.matches?.('input, textarea, [contenteditable="true"], button, a, [role="button"]')) return;
       if (!imageURLRef.current || imageErrorRef.current || predictingRef.current) return;
       e.preventDefault();
       analizarRef.current?.();
@@ -242,7 +182,6 @@ export default function App() {
     if (id !== validModelId) {
       setModelId(id);
       clearImage();
-      setShowCam(false);
     }
   }, [validModelId, setModelId, clearImage]);
 
@@ -278,7 +217,7 @@ export default function App() {
               <circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" strokeWidth="1.2" />
               <path d="M7.5 1.3v2.4M7.5 11.3v2.4M1.3 7.5h2.4M11.3 7.5h2.4" stroke="currentColor" strokeWidth="1" />
             </svg>
-            Atlas dermatoscópico
+            melanoma-detection
           </span>
           <nav className="toplinks" aria-label="Enlaces al código">
             <a href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/entrenamiento_conjunto_kaggle.ipynb`} target="_blank" rel="noreferrer">
@@ -321,8 +260,6 @@ export default function App() {
                       imageError={imageError}
                       dragActive={dragActive}
                       predicting={predicting}
-                      showCam={showCam}
-                      camRect={camRect}
                       onFile={handleFile}
                       onDrop={onDrop}
                       onDragOver={onDragOver}
@@ -331,7 +268,6 @@ export default function App() {
                       onImageLoad={onImgLoad}
                       onImageError={() => setImageError(true)}
                       imgRef={imgRef}
-                      camCanvasRef={camCanvasRef}
                       inputRef={inputRef}
                       disabled={modelStatus !== 'ready'}
                     />
@@ -358,17 +294,6 @@ export default function App() {
                         {predictionError ? 'Reintentar análisis' : 'Analizar de nuevo'}
                       </button>
                     )}
-
-                    <AnimatePresence>
-                      {result && (
-                        <GradCamToggle
-                          showCam={showCam}
-                          onToggle={() => setShowCam((v) => !v)}
-                          busy={camBusy}
-                          disabled={!result}
-                        />
-                      )}
-                    </AnimatePresence>
 
                     <AnimatePresence>
                       {result && <ResultCard result={result} />}

@@ -21,6 +21,7 @@ export default function ResultCard({ result }) {
       className="result-card"
       role="region"
       aria-label="Resultado del análisis"
+      aria-live="polite"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}

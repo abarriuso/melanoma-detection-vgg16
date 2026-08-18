@@ -1,5 +1,7 @@
 # Despliegue automático de la demo React a GitHub Pages.
-# Se ejecuta en cada push a main. Para activarlo:
+# Se ejecuta en cada push a main, pero SOLO publica si lint + tests + build
+# pasan en el propio job `build` (la calidad es puerta del despliegue).
+# Para activarlo:
 #   Settings → Pages → Source → GitHub Actions
 name: Deploy demo to GitHub Pages
 
@@ -15,10 +17,11 @@ on:
 permissions: {}
 
 # Evita deploys simultáneos: si hay uno en curso y llega otro push,
-# cancela el anterior y ejecuta el nuevo.
+# el nuevo espera a que termine el anterior. NO se cancela un deploy a
+# medias: interrumpir la publicación en Pages puede dejarla inconsistente.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -29,28 +32,36 @@ jobs:
       run:
         working-directory: demo  # la app React vive en demo/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # El build no vuelve a usar git; no dejamos el token en .git/config.
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 11.18.0 # misma versión que en local, sin rango flotante
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: demo/pnpm-lock.yaml
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
       # pnpm install --frozen-lockfile: instala exactamente lo que dice
       # pnpm-lock.yaml, sin modificarlo. Reproducible para CI.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Puerta de calidad: si lint o los tests fallan, el job muere aquí
+      # y el job `deploy` (needs: build) no publica nada en Pages.
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
 
       # Vite genera el build de producción en demo/dist/.
       # La variable `base` en vite.config.js se encarga de prefijar las rutas
@@ -59,7 +70,7 @@ jobs:
         run: pnpm build
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: demo/dist
 
@@ -77,4 +88,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

@@ -5,8 +5,6 @@ export default function Dropzone({
   imageError,
   dragActive,
   predicting,
-  showCam,
-  camRect,
   onFile,
   onDrop,
   onDragOver,
@@ -15,12 +13,15 @@ export default function Dropzone({
   onImageLoad,
   onImageError,
   imgRef,
-  camCanvasRef,
   inputRef,
   disabled,
 }) {
   const onDropzoneKey = (e) => {
+    if (disabled) return;
     if (e.key === 'Enter' || e.key === ' ') {
+      // stopPropagation: Enter no debe burbujear al atajo global de App,
+      // que dispararía el análisis además de abrir el selector de archivos.
+      e.stopPropagation();
       e.preventDefault();
       inputRef.current?.click();
     }
@@ -78,7 +79,7 @@ export default function Dropzone({
                   ref={imgRef}
                   src={imageURL}
                   alt="Lesión dermatoscópica a analizar"
-                  className={`preview ${showCam ? 'is-grayscale' : ''}`}
+                  className="preview"
                   onLoad={onImageLoad}
                   onError={onImageError}
                 />
@@ -88,17 +89,6 @@ export default function Dropzone({
                     <span className="scan-ring" aria-hidden="true" />
                   </>
                 )}
-                <canvas
-                  ref={camCanvasRef}
-                  className={`preview-cam ${showCam ? 'is-on' : ''}`}
-                  aria-hidden="true"
-                  style={camRect ? {
-                    left: `${camRect.left}px`,
-                    top: `${camRect.top}px`,
-                    width: `${camRect.width}px`,
-                    height: `${camRect.height}px`,
-                  } : undefined}
-                />
               </div>
               <motion.button
                 type="button"

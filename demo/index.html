@@ -11,7 +11,7 @@
     <link rel="preload" as="fetch" href="./model/efficientnetv2s/model.json" crossorigin />
 
     <!-- Content Security Policy se inyecta vía vite plugin (cspPlugin) según modo dev/prod -->
-    <!-- Las tipografías (Fraunces / Inter / JetBrains Mono) se auto-hostean vía
+    <!-- Las tipografías (IBM Plex Sans / IBM Plex Mono) se auto-hostean vía
          @fontsource y se importan en src/main.jsx. Sin third-party fetches. -->
     <!-- Frame-buster: evita que GitHub Pages (u otro hosting estático sin
          headers HTTP) sea embebido en un iframe malicioso. Va en un fichero
@@ -22,7 +22,11 @@
     <title>Detección de melanoma — EfficientNetV2S + TensorFlow.js</title>
     <meta
       name="description"
-      content="Análisis de lesiones cutáneas con EfficientNetV2S fine-tuned (AUC 0.9742). Inferencia 100% client-side con TensorFlow.js. No es un dispositivo médico."
+      content="Análisis de lesiones cutáneas con EfficientNetV2S fine-tuned (AUC 0.971). Inferencia 100% client-side con TensorFlow.js. No es un dispositivo médico."
+    />
+    <meta
+      name="description"
+      content="Análisis de lesiones cutáneas con EfficientNetV2S fine-tuned (AUC 0.971). Inferencia 100% client-side con TensorFlow.js. No es un dispositivo médico."
     />
 
     <!-- Open Graph. URLs absolutas (los crawlers no resuelven relativas). -->
@@ -31,19 +35,19 @@
     <meta property="og:title" content="Detección de melanoma" />
     <meta
       property="og:description"
-      content="EfficientNetV2S fine-tuned · AUC 0.9742 · análisis en tu navegador sin enviar datos. No es un dispositivo médico."
+      content="EfficientNetV2S fine-tuned · AUC 0.971 · análisis en tu navegador sin enviar datos. No es un dispositivo médico."
     />
     <meta property="og:image" content="https://abarriuso.github.io/melanoma-detection-vgg16/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt"       content="Resumen del proyecto: AUC 0.9742, accuracy 91.6%, sensibilidad 88.2%." />
+    <meta property="og:image:alt"       content="Resumen del proyecto: AUC 0.971, accuracy 87.1%, sensibilidad 90.0%." />
     <meta property="og:locale" content="es_ES" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Detección de melanoma" />
     <meta
       name="twitter:description"
-      content="EfficientNetV2S fine-tuned · AUC 0.9742 · análisis en tu navegador sin enviar datos."
+      content="EfficientNetV2S fine-tuned · AUC 0.971 · análisis en tu navegador sin enviar datos."
     />
     <meta name="twitter:image" content="https://abarriuso.github.io/melanoma-detection-vgg16/og.png" />
 
@@ -71,8 +75,8 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <div style="max-width:560px;margin:3rem auto;padding:1.5rem 0;color:#1c1a17;background:#f7f4ee;border-top:3px double rgba(28,26,23,0.32);border-bottom:1px solid rgba(28,26,23,0.14);font-family:Georgia,serif;text-align:center">
-        <h2 style="font-weight:500">JavaScript desactivado</h2>
+      <div style="max-width:560px;margin:3rem auto;padding:1.5rem 0;color:#1c1a17;background:#f7f4ee;border-top:3px double rgba(28,26,23,0.32);border-bottom:1px solid rgba(28,26,23,0.14);font-family:'Segoe UI',system-ui,Arial,sans-serif;text-align:center">
+        <h2 style="font-weight:600">JavaScript desactivado</h2>
         <p>El análisis de inteligencia artificial se ejecuta <strong>directamente en tu navegador</strong> mediante TensorFlow.js. Necesita JavaScript habilitado.</p>
         <p>Actívalo o consulta el código en
           <a style="color:#0f5e5a" href="https://github.com/abarriuso/melanoma-detection-vgg16">GitHub</a>.

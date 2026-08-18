@@ -7,6 +7,10 @@ numpy>=1.24
 matplotlib>=3.7
 scikit-learn>=1.3
 pillow>=10.0
+# Temperature scaling en los notebooks (scipy.optimize.minimize_scalar)
+scipy>=1.10
+# Keras 2 (legacy): imprescindible, todo el pipeline fija TF_USE_LEGACY_KERAS=1
+tf-keras>=2.15
 
 # Conversión Keras → TF.js para la demo web
 tensorflowjs>=4.22

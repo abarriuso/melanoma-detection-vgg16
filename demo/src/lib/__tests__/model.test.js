@@ -94,7 +94,6 @@ describe('getModel', () => {
     expect(m.name).toBe('VGG16');
     expect(m.path).toContain('model.json');
     expect(m.temperature).toBe(1.3359);
-    expect(m.targetLayer).toBe('block5_conv3');
     expect(m.auc).toBe(0.9712);
   });
 
@@ -102,13 +101,12 @@ describe('getModel', () => {
     const m = getModel('resnet50v2');
     expect(m.id).toBe('resnet50v2');
     expect(m.temperature).toBe(1.0221);
-    expect(m.targetLayer).toBe('post_relu');
   });
 
   it('returns EfficientNetV2S for its id', () => {
     const m = getModel('efficientnetv2s');
     expect(m.id).toBe('efficientnetv2s');
-    expect(m.targetLayer).toBe('top_conv');
+    expect(m.temperature).toBe(1.1836);
   });
 
   it('falls back to EfficientNetV2S for unknown id', () => {
@@ -183,5 +181,60 @@ describe('getModelMetadata', () => {
     expect(meta).toBeDefined();
     expect(meta.version).toBe('2.0.0');
     expect(meta.temperature).toBe(1.3359);
+  });
+});
+
+describe('gestión de memoria (F-04/F-05)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('predictImage dispone los tensores intermedios (píxeles e input)', async () => {
+    const tf = await import('@tensorflow/tfjs');
+    tf.browser.fromPixelsAsync.mockClear();
+    const { predictImage } = await import('../model.js');
+    const img = { complete: true, naturalWidth: 224, naturalHeight: 224 };
+    await predictImage(img, 'vgg16');
+    const pixels = await tf.browser.fromPixelsAsync.mock.results.at(-1).value;
+    // El mock encadena resizeBilinear/toFloat/... sobre el mismo objeto,
+    // así que `pixels` e `input` son el mismo tensor: dispose se invoca.
+    expect(pixels.dispose).toHaveBeenCalled();
+  });
+
+  it('predictImage dispone el tensor de salida del modelo', async () => {
+    const { predictImage } = await import('../model.js');
+    const tf = await import('@tensorflow/tfjs');
+    const model = await tf.loadLayersModel();
+    model.predict.mockClear();
+    const img = { complete: true, naturalWidth: 224, naturalHeight: 224 };
+    await predictImage(img, 'vgg16');
+    const output = model.predict.mock.results.at(-1).value;
+    expect(output.dispose).toHaveBeenCalled();
+  });
+
+  it('al terminar de cargar un modelo nuevo se dispone el anterior (LRU de 1)', async () => {
+    const { loadModel } = await import('../model.js');
+    const first = await loadModel('vgg16');
+    first.dispose.mockClear();
+    await loadModel('efficientnetv2s');
+    expect(first.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('un version mismatch dispone el modelo viejo antes de recargar', async () => {
+    const tf = await import('@tensorflow/tfjs');
+    const staleModel = {
+      predict: vi.fn(() => ({ data: async () => new Float32Array([0.5]), dispose: vi.fn() })),
+      dispose: vi.fn(),
+      userDefinedMetadata: { version: '1.0.0', temperature: 1.0 },
+    };
+    tf.loadLayersModel.mockResolvedValueOnce(staleModel);
+    const { loadModel } = await import('../model.js');
+    const first = await loadModel('vgg16');
+    expect(first).toBe(staleModel);
+    // Segunda carga: la caché tiene versión 1.0.0 ≠ 2.0.0 del registro.
+    const reloaded = await loadModel('vgg16');
+    expect(staleModel.dispose).toHaveBeenCalledTimes(1);
+    expect(reloaded).not.toBe(staleModel);
+    expect(reloaded).toBeDefined();
   });
 });

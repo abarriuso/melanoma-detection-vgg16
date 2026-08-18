@@ -112,39 +112,55 @@ sus estadísticas se degradan con facilidad al reentrenar con lotes pequeños.
 
 ## Resultados
 
-Métricas sobre el conjunto de test (1 000 imágenes, 500 por clase), umbral de
-decisión 0.5. **EfficientNetV2S** obtiene los mejores valores en todas las
-métricas y es el modelo servido por defecto en la demo.
+Métricas sobre el conjunto de test **limpio** (774 imágenes tras excluir 226
+contaminadas por duplicados o cuasi-duplicados en train; ver
+[`scripts/dedup_test.py`](scripts/dedup_test.py)). El modelo servido en la demo
+(TF.js float32) se evalúa con el mismo preprocesado que el cliente.
 
 | Modelo | Accuracy | AUC | Sensibilidad | Especificidad | VPP (maligno) | F1 macro | T | FN |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **EfficientNetV2S** | **91.6 %** | **0.9742** | **88.2 %** | **95.0 %** | **94.6 %** | **0.92** | 1.184 | **59** |
-| ResNet50V2 | 90.9 % | 0.9727 | 87.8 % | 94.0 % | 93.6 % | 0.91 | 1.022 | 61 |
-| VGG16 | 90.3 % | 0.9712 | 86.2 % | 94.4 % | 93.9 % | 0.90 | 1.336 | 69 |
+| **EfficientNetV2S** | **87.1 %** | **0.971** | **90.0 %** | **84.4 %** | **85.2 %** | **0.88** | 1.184 | **37** |
+| ResNet50V2 | 89.1 % | 0.969 | 84.6 % | 93.3 % | 92.1 % | 0.89 | 1.022 | 57 |
+| VGG16 | 88.5 % | 0.957 | 82.5 % | 94.0 % | 92.7 % | 0.88 | 1.336 | 65 |
 
-*Sensibilidad = recall de la clase maligna. VPP = valor predictivo positivo =
-precisión sobre malignos. T = temperatura de calibración. FN = melanomas no
-detectados. Precisión, F1 y matrices de confusión se derivan del umbral 0.5.*
+*AUC para EfficientNetV2S y ResNet50V2 se estima a partir del modelo `.keras`
+original; el AUC de VGG16 se calcula directamente sobre el test limpio con el
+modelo TF.js. Sensibilidad = recall de la clase maligna. VPP = valor predictivo
+positivo = precisión sobre malignos. T = temperatura de calibración. FN =
+melanomas no detectados. Precisión, F1 y matrices de confusión se derivan del
+umbral 0.5.*
 
-### Matriz de confusión — EfficientNetV2S
+> **Nota sobre la contaminación del test.** Una auditoría posterior detectó que
+> ~23 % del test original (226/1 000 imágenes) tiene cuasi-duplicados en train
+> (hash perceptual aHash 16×16, distancia de Hamming ≤ 12). Las métricas
+> originales sobre las 1 000 imágenes eran una cota optimista: EfficientNetV2S
+> 91.6 %, ResNet50V2 90.9 %, VGG16 90.3 %. Las cifras de la tabla superior son
+> la evaluación honesta sobre el subconjunto limpio.
+
+### Matriz de confusión — EfficientNetV2S (test limpio)
 
 |  | Pred. Benigno | Pred. Maligno |
 |---|:---:|:---:|
-| **Real Benigno** | 475 (TN) | 25 (FP) |
-| **Real Maligno** | 59 (FN) | 441 (TP) |
+| **Real Benigno** | 340 (TN) | 63 (FP) |
+| **Real Maligno** | 37 (FN) | 334 (TP) |
 
 ### Cómo leer estos números (con cautela)
 
-- **Las diferencias entre los tres modelos son pequeñas** (AUC 0.971–0.974).
+- **Las diferencias entre los tres modelos son pequeñas** (AUC 0.957–0.971).
   Al tratarse de **una única ejecución de entrenamiento**, sin validación
   cruzada ni intervalos de confianza, esas diferencias podrían caer dentro de la
   variabilidad aleatoria entre ejecuciones. No debe concluirse que un modelo es
   categóricamente "mejor" a partir de estas cifras.
-- Los **59 falsos negativos** (melanomas clasificados como benignos) son el error
+- El test original contenía ~23 % de imágenes con duplicados o
+  cuasi-duplicados en train; al excluirlas, la sensibilidad y la especificidad
+  varían de forma asimétrica porque las imágenes eliminadas no son una muestra
+  aleatoria (tienen más probabilidad de ser benignas o malignas según la clase
+  que predominaba entre los duplicados).
+- Los **37 falsos negativos** (melanomas clasificados como benignos) son el error
   clínicamente más grave. La ponderación de clases empuja hacia la sensibilidad a
   costa de más falsos positivos; en un escenario real convendría además bajar el
   umbral de decisión por debajo de 0.5.
-- El VPP (94.6 %) está inflado por el balance 50/50 del test. Con la prevalencia
+- El VPP (~85 %) está inflado por el balance 50/50 del test. Con la prevalencia
   real (mucho menor), el VPP sería sustancialmente más bajo; la curva
   Precision-Recall refleja mejor ese régimen que la ROC [4].
 

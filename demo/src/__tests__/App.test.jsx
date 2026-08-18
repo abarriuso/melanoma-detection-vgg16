@@ -80,15 +80,19 @@ describe('App', () => {
   it('habilita los tres modelos en el selector (todos con pesos publicados)', async () => {
     const App = (await import('../App.jsx')).default;
     render(<App />);
-    const vgg16Radio = screen.getByRole('radio', { name: /vgg16/i });
-    const resnetRadio = screen.getByRole('radio', { name: /resnet50v2/i });
-    const efficientnetRadio = screen.getByRole('radio', { name: /efficientnetv2s/i });
+    // findByRole: re-query + timeout explícito de 3 s. La cadena async de
+    // carga del modelo (backend → pesos → warmup) son 6+ microtasks y con
+    // CPU contendida (CI) el timeout por defecto de 1 s se agotaba de forma
+    // intermitente.
+    const vgg16Radio = await screen.findByRole('radio', { name: /vgg16/i }, { timeout: 3000 });
+    const resnetRadio = await screen.findByRole('radio', { name: /resnet50v2/i }, { timeout: 3000 });
+    const efficientnetRadio = await screen.findByRole('radio', { name: /efficientnetv2s/i }, { timeout: 3000 });
     // Los radios se habilitan cuando el modelo termina de cargar (async).
     await waitFor(() => {
       expect(vgg16Radio).toBeEnabled();
       expect(resnetRadio).toBeEnabled();
       expect(efficientnetRadio).toBeEnabled();
-    });
+    }, { timeout: 3000 });
   });
 
   it('usa el modelo por defecto (EfficientNetV2S) si el modelId guardado no existe', async () => {
@@ -97,5 +101,58 @@ describe('App', () => {
     render(<App />);
     const efficientnetRadio = screen.getByRole('radio', { name: /efficientnetv2s/i });
     expect(efficientnetRadio).toBeChecked();
+  });
+
+  it('Enter sobre un enlace enfocado no dispara el análisis ni cancela la navegación (F-02)', async () => {
+    // jsdom no decodifica imágenes ni soporta blob URLs: se simulan para
+    // que handleFile complete y la app llegue al estado "imagen cargada".
+    const RealImage = globalThis.Image;
+    const realCreate = URL.createObjectURL;
+    const realRevoke = URL.revokeObjectURL;
+    globalThis.Image = class {
+      constructor() {
+        this.naturalWidth = 224;
+        this.naturalHeight = 224;
+      }
+      set src(_) {
+        setTimeout(() => this.onload?.(), 0);
+      }
+    };
+    URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    URL.revokeObjectURL = vi.fn();
+    try {
+      const App = (await import('../App.jsx')).default;
+      const { container } = render(<App />);
+      const input = container.querySelector('input[type="file"]');
+      const file = new File([new Uint8Array(100)], 'lesion.jpg', { type: 'image/jpeg' });
+      fireEvent.change(input, { target: { files: [file] } });
+      // Esperar a que el preview aparezca = imageURL cargada, atajo armado.
+      await screen.findByAltText(/lesión dermatoscópica/i, {}, { timeout: 3000 });
+
+      // Enter sobre un enlace: el atajo global debe ignorarlo.
+      // (Nombre exacto: el footer tiene otro enlace "Código fuente".)
+      const link = screen.getByRole('link', { name: 'Código' });
+      link.focus();
+      const linkDefaultAllowed = fireEvent.keyDown(link, { key: 'Enter' });
+      expect(linkDefaultAllowed).toBe(true); // sin preventDefault: navegación intacta
+
+      // Enter sobre un role="button" sin handler propio: igualmente ignorado
+      // (el dropzone real sí tiene handler propio y hace su preventDefault
+      // legítimo para abrir el selector de archivos).
+      const dummy = document.createElement('div');
+      dummy.setAttribute('role', 'button');
+      document.body.appendChild(dummy);
+      const roleButtonDefaultAllowed = fireEvent.keyDown(dummy, { key: 'Enter' });
+      expect(roleButtonDefaultAllowed).toBe(true);
+      dummy.remove();
+
+      // Control: con el foco fuera de interactivos el atajo sigue armado.
+      const bodyDefaultAllowed = fireEvent.keyDown(document.body, { key: 'Enter' });
+      expect(bodyDefaultAllowed).toBe(false); // preventDefault aplicado
+    } finally {
+      globalThis.Image = RealImage;
+      URL.createObjectURL = realCreate;
+      URL.revokeObjectURL = realRevoke;
+    }
   });
 });
