@@ -56,8 +56,8 @@ export default defineConfig({
         start_url: `/${REPO_NAME}/`,
         scope: `/${REPO_NAME}/`,
         display: 'standalone',
-        background_color: '#0a0a10',
-        theme_color: '#0a0a10',
+        background_color: '#f7f4ee',
+        theme_color: '#f7f4ee',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

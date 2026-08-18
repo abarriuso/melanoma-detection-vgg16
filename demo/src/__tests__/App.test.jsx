@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // Mock TF.js antes de cualquier import del módulo
 vi.mock('@tensorflow/tfjs', () => import('../../__mocks__/@tensorflow/tfjs.js'));
@@ -83,9 +83,12 @@ describe('App', () => {
     const vgg16Radio = screen.getByRole('radio', { name: /vgg16/i });
     const resnetRadio = screen.getByRole('radio', { name: /resnet50v2/i });
     const efficientnetRadio = screen.getByRole('radio', { name: /efficientnetv2s/i });
-    expect(vgg16Radio).toBeEnabled();
-    expect(resnetRadio).toBeEnabled();
-    expect(efficientnetRadio).toBeEnabled();
+    // Los radios se habilitan cuando el modelo termina de cargar (async).
+    await waitFor(() => {
+      expect(vgg16Radio).toBeEnabled();
+      expect(resnetRadio).toBeEnabled();
+      expect(efficientnetRadio).toBeEnabled();
+    });
   });
 
   it('usa el modelo por defecto (EfficientNetV2S) si el modelId guardado no existe', async () => {

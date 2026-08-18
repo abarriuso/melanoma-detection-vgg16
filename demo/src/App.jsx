@@ -4,7 +4,6 @@ import { getModel, GITHUB_USER, REPO_NAME, UMBRAL } from './lib/constants';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useModel } from './hooks/useModel';
 import { useImageAnalysis } from './hooks/useImageAnalysis';
-import ParticleBackground from './components/ParticleBackground';
 import Hero from './components/Hero';
 import ModelStatusBar from './components/ModelStatusBar';
 import GpuWarning from './components/GpuWarning';
@@ -81,9 +80,6 @@ export default function App() {
   const fadeUp = prefersReducedMotion
     ? {}
     : { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -6 }, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } };
-  const fadeIn = prefersReducedMotion
-    ? {}
-    : { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.25 } };
 
   // --- Ejemplos ---
   const [examples, setExamples] = useState([]);
@@ -176,13 +172,17 @@ export default function App() {
   }, [showCam, result, renderGradCAM]);
 
   // --- Cálculo rect de Grad-CAM ---
+  // La imagen se muestra con object-fit: cover dentro de la máscara
+  // circular y el heatmap se estira sobre la imagen completa (igual que
+  // resizeBilinear, que estira a 224×224). El rect "cover" puede salirse
+  // del contenedor; la máscara circular lo recorta igual que a la imagen.
   const updateCamRect = useCallback(() => {
     const img = imgRef.current;
     if (!img || !img.naturalWidth || !img.naturalHeight) return;
     const cw = img.clientWidth;
     const ch = img.clientHeight;
     if (!cw || !ch) return;
-    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+    const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
     const w = img.naturalWidth * scale;
     const h = img.naturalHeight * scale;
     setCamRect({ left: (cw - w) / 2, top: (ch - h) / 2, width: w, height: h });
@@ -257,32 +257,50 @@ export default function App() {
 
   return (
     <>
-      <ParticleBackground />
-      <div className="mesh-bg" aria-hidden="true" />
-      <div className="grid-pattern" aria-hidden="true" />
+      {/* Grano de papel: SVG inline (la CSP no admite data: en img-src,
+          así que no puede ser background-image). */}
+      <div className="grain-overlay" aria-hidden="true">
+        <svg width="100%" height="100%">
+          <filter id="paper-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#paper-grain)" />
+        </svg>
+      </div>
+
       <div className="app" aria-busy={modelStatus === 'loading'}>
         <a href="#main-content" className="skip-link">Saltar al contenido principal</a>
 
-        <nav className="toplinks" aria-label="Enlaces al código">
-          <a href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/entrenamiento_conjunto_kaggle.ipynb`} target="_blank" rel="noreferrer">
-            Ver notebook →
-          </a>
-          <a href={`https://github.com/${GITHUB_USER}/${REPO_NAME}`} target="_blank" rel="noreferrer">
-            Código →
-          </a>
-        </nav>
+        <header className="masthead">
+          <span className="masthead-brand">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" strokeWidth="1.2" />
+              <path d="M7.5 1.3v2.4M7.5 11.3v2.4M1.3 7.5h2.4M11.3 7.5h2.4" stroke="currentColor" strokeWidth="1" />
+            </svg>
+            Atlas dermatoscópico
+          </span>
+          <nav className="toplinks" aria-label="Enlaces al código">
+            <a href={`https://github.com/${GITHUB_USER}/${REPO_NAME}/blob/main/notebooks/entrenamiento_conjunto_kaggle.ipynb`} target="_blank" rel="noreferrer">
+              Notebook
+            </a>
+            <a href={`https://github.com/${GITHUB_USER}/${REPO_NAME}`} target="_blank" rel="noreferrer">
+              Código
+            </a>
+          </nav>
+        </header>
 
         <Hero modelName={getModel(validModelId).name} auc={getModel(validModelId).auc} />
 
         <main id="main-content">
           <ErrorBoundary>
             <div className="main-grid">
-              {/* Columna izquierda: Dropzone + resultados */}
+              {/* Columna izquierda: captura y lectura */}
               <div className="main-col">
                 <section className="panel" aria-labelledby="panel1-title">
                   <div className="panel-head">
                     <span className="panel-idx" aria-hidden="true">01</span>
-                    <h2 id="panel1-title">Sube una imagen</h2>
+                    <h2 id="panel1-title">Captura</h2>
                   </div>
                   <div className="panel-body">
                     <ModelStatusBar status={modelStatus} progress={progress} backend={backend} />
@@ -365,12 +383,12 @@ export default function App() {
                 </section>
               </div>
 
-              {/* Columna derecha: Selector de modelo (sticky en desktop) */}
+              {/* Columna derecha: el instrumento (sticky en desktop) */}
               <div className="main-col">
                 <section className="panel panel--sticky" aria-labelledby="panel2-title">
                   <div className="panel-head">
                     <span className="panel-idx" aria-hidden="true">02</span>
-                    <h2 id="panel2-title">Configuración</h2>
+                    <h2 id="panel2-title">Instrumento</h2>
                   </div>
                   <div className="panel-body">
                     <ModelSelector

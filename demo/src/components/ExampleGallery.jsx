@@ -34,12 +34,12 @@ export default function ExampleGallery({ examples, onSelect, disabled }) {
               aria-label={`Probar con lesión ${ex.real === 'malignant' ? 'maligna' : 'benigna'}`}
               title={ex.real === 'malignant' ? 'Etiqueta: maligno' : 'Etiqueta: benigno'}
               layout
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.18 }}
             >
               <img src={ex.path} alt="" loading="lazy" crossOrigin="anonymous" />
               <span className="example-thumb-badge" aria-hidden="true">

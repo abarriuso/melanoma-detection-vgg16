@@ -11,11 +11,9 @@ export default function ModelSelector({ modelId, onChange, predicting, disabled 
             key={m.id}
             className={`model-card ${modelId === m.id ? 'is-active' : ''} ${m.auc == null ? 'is-pending' : ''}`}
             title={m.auc == null ? 'Modelo aún sin pesos publicados' : undefined}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.3 }}
-            whileHover={m.auc != null ? { y: -2 } : {}}
-            whileTap={m.auc != null ? { scale: 0.98 } : {}}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: i * 0.04, duration: 0.25 }}
           >
             <input
               type="radio"
@@ -28,6 +26,7 @@ export default function ModelSelector({ modelId, onChange, predicting, disabled 
               }}
             />
             <div className="model-card-header">
+              <span className="model-radio" aria-hidden="true" />
               <span className="model-card-name">{m.name}</span>
               {m.auc != null && modelId === m.id && (
                 <span className="model-card-check" aria-hidden="true">

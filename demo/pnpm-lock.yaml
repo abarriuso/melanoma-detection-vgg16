@@ -18,6 +18,9 @@ importers:
 
   .:
     dependencies:
+      '@fontsource/fraunces':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/inter':
         specifier: ^5.3.0
         version: 5.3.0
@@ -861,6 +864,9 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource/fraunces@5.3.0':
+    resolution: {integrity: sha512-LEHTOBiZufQzAvnAe2rZ8ZknbDS28Q9kzwb0L+gZJEmjLGr8hhZ/5NuHXwDuHBWhVXYoiGGXmrb0H6Ko/RrHTg==}
 
   '@fontsource/inter@5.3.0':
     resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
@@ -3732,6 +3738,8 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.15.1': {}
+
+  '@fontsource/fraunces@5.3.0': {}
 
   '@fontsource/inter@5.3.0': {}
 

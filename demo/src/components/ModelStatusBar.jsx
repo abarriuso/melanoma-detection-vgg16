@@ -1,5 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion';
-
 export default function ModelStatusBar({ status, progress, backend }) {
   return (
     <div className={`model-status status-${status}`} role="status" aria-live="polite">
@@ -30,9 +28,8 @@ export default function ModelStatusBar({ status, progress, backend }) {
           <span>No se pudo cargar el modelo</span>
           <button
             type="button"
-            className="reanalyze-btn"
+            className="status-retry-btn"
             onClick={() => window.location.reload()}
-            style={{ marginTop: '0.5rem', width: 'auto', marginLeft: 'auto' }}
           >
             Reintentar
           </button>
