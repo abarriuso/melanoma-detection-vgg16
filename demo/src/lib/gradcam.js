@@ -42,9 +42,37 @@ function getSplitModels(model, modelId) {
   const idx = model.layers.indexOf(targetLayer);
   const clsInput = tf.input({ shape: targetLayer.outputShape.slice(1) });
   let y = clsInput;
-  for (let i = idx + 1; i < model.layers.length; i++) {
+
+  // Grad-CAM debe derivar el LOGIT (pre-sigmoide), no la probabilidad. Con
+  // predicciones confiadas el sigmoide se satura (p ≈ 1 → p·(1−p) ≈ 0), su
+  // gradiente se anula y el mapa sale entero a cero (overlay en blanco). Para
+  // evitarlo reconstruimos la cabeza hasta la ÚLTIMA capa y, en vez de aplicar
+  // su sigmoide, usamos solo su parte lineal (kernel·x + bias) mediante un
+  // Dense lineal que comparte los pesos de la capa de salida.
+  const outLayer = model.layers[model.layers.length - 1];
+  const outConfig = outLayer.getConfig?.() ?? {};
+  const stripActivation =
+    outLayer.getClassName() === 'Dense' &&
+    outConfig.activation &&
+    outConfig.activation !== 'linear';
+  const lastIdx = stripActivation ? model.layers.length - 1 : model.layers.length;
+
+  for (let i = idx + 1; i < lastIdx; i++) {
     y = model.layers[i].apply(y);
   }
+
+  if (stripActivation) {
+    const logitLayer = tf.layers.dense({
+      units: outConfig.units,
+      useBias: outConfig.useBias,
+      activation: 'linear',
+    });
+    y = logitLayer.apply(y);
+    // apply() construye la capa (crea kernel/bias); ya podemos copiar los pesos
+    // reales de la capa de salida para que el logit sea el correcto.
+    logitLayer.setWeights(outLayer.getWeights());
+  }
+
   const clsModel = tf.model({ inputs: clsInput, outputs: y });
 
   const result = { actModel, clsModel };
