@@ -309,4 +309,4 @@ cortesía de Hasnain Javed en Kaggle [3].
 **Adrián Barriuso Pizarro** — proyecto del Curso de Especialización en IA y Big
 Data (IES Ágora, 2024-2025), refactorizado en 2026 para portfolio.
 
-[LinkedIn](https://www.linkedin.com/in/adrián-barriuso) · [GitHub](https://github.com/abarriuso)
+[LinkedIn](https://www.linkedin.com/in/adrian-barriuso/) · [GitHub](https://github.com/abarriuso)
